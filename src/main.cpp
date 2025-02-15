@@ -38,6 +38,7 @@ WebServer server(80);
 
 void setup() {
     Serial.begin(115200);
+    LED_test_setup();
 
     
 
