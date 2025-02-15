@@ -3,47 +3,99 @@
 #include <vector>
 #include "SPIFFS.h"
 #include "WiFi.h"
-#include <variant>
+#include <WebServer.h>
 
 #define CONTROL_LED_MODE 0
 #define WIFI_CONNECT_MODE 1
 
 int mode = 0;
-std::vector<std::vector<std::string>> scanned_networks; //vector containg all networks around
 
-void auto_connect_to_wifi();
+// manual connect to wifi
+std::vector<std::vector<std::string>> scanned_networks; // Stores scanned networks
+
+// LED test
+String ledState = "OFF";
+const int ledPin = 2;
+
+
+
+//root
+void handleRoot();
+
+//wifi connection
+void handleRootWiFi();
 void manual_connect_to_wifi();
+void auto_connect_to_wifi();
 
+//test
+void handleRootTest();
+void handleLEDOn();
+void handleLEDOff();
+void handleStatus();
+void handleScanNetworks();
 
 // Create WiFi server on port 80
-WiFiServer server(80);
+WebServer server(80);
 
 
 
 
 void setup() {
     Serial.begin(115200);
+
+    pinMode(ledPin, OUTPUT);
+
+
     if (!SPIFFS.begin(true)) {  // true -> format if failed
         Serial.println("SPIFFS Mount Failed");
         return;
     }
     Serial.println("SPIFFS Mounted Successfully");
-    manual_connect_to_wifi();
-    //auto_connect_to_wifi();
+
+    auto_connect_to_wifi();
+    if (WiFi.status() != WL_CONNECTED)
+    {
+        manual_connect_to_wifi();
+    }
+    
+
+    Serial.println("\nWiFi connected!");
+    Serial.print("IP Address: ");
+    Serial.println(WiFi.localIP());
+
+    //root
+    //server.on("/", handleRoot);
+    server.on("/", handleRootTest);
+
+    //wifi connection
+    server.on("/wifi", handleRootWiFi);
+
+    //test
+    server.on("/test", handleRootTest);
+    server.on("/led/on", handleLEDOn);
+    server.on("/led/off", handleLEDOff);
+    server.on("/status", handleStatus);
+    server.on("/scan", handleScanNetworks);
+    
+    server.begin();
+
+    ledState = "ON";
+    digitalWrite(ledPin, HIGH);
 }
 
 void loop() {
-    switch (mode)
-    {
-    case CONTROL_LED_MODE:
-        break;
-    
-    case WIFI_CONNECT_MODE:
-        
-        break;
-    default:
-        break;
+    server.handleClient(); 
+}
+
+void handleRootWiFi() {
+    File file = SPIFFS.open("/wifi_connection.html", "r");
+    if (!file) {
+        server.send(500, "text/plain", "Failed to open file");
+        return;
     }
+    String html = file.readString();
+    file.close();
+    server.send(200, "text/html", html);
 }
 
 //connecting to saved connections
@@ -199,4 +251,45 @@ void manual_connect_to_wifi() {
     }
 
     mode = 1;
+}
+
+void handleRootTest() {
+    File file = SPIFFS.open("/test.html", "r");
+    if (!file) {
+        server.send(500, "text/plain", "Failed to open file");
+        return;
+    }
+    String html = file.readString();
+    file.close();
+    server.send(200, "text/html", html);
+}
+
+void handleLEDOn() {
+    ledState = "ON";
+    digitalWrite(ledPin, HIGH);
+    server.send(200, "text/plain", "LED is ON");
+}
+
+void handleLEDOff() {
+    ledState = "OFF";
+    digitalWrite(ledPin, LOW);
+    server.send(200, "text/plain", "LED is OFF");
+}
+
+void handleStatus() {
+    String json = "{ \"led\": \"" + ledState + "\" }";
+    server.send(200, "application/json", json);
+}
+
+void handleScanNetworks() {
+    scanned_networks.clear();
+    int numNetworks = WiFi.scanNetworks();
+    for (int i = 0; i < numNetworks; i++) {
+        scanned_networks.push_back({
+            std::string(WiFi.SSID(i).c_str()),
+            std::to_string(WiFi.RSSI(i)),
+            std::to_string(WiFi.encryptionType(i))
+        });
+    }
+    server.send(200, "text/plain", "Networks Scanned");
 }
