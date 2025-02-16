@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wi-Fi Scanner</title>
+    <script>
+        async function loadWiFiList() {
+            const response = await fetch("/wifi");
+            const data = await response.json();
+            
+            let output = "<ul>";
+            data.forEach(network => {
+                output += `<li><strong>${network.ssid}</strong> - RSSI: ${network.rssi}, Encryption: ${network.encryption}</li>`;
+            });
+            output += "</ul>";
+            
+            document.getElementById("wifiList").innerHTML = output;
+        }
+
+        window.onload = loadWiFiList;
+    </script>
+</head>
+<body>
+    <h2>Available Wi-Fi Networks</h2>
+    <div id="wifiList">Loading...</div>
+</body>
+</html>
