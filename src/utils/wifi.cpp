@@ -8,15 +8,15 @@ void scan_wifi() {
     Serial.println("scanning for networks ...");
 
     //scan
-    int n = WiFi.scanNetworks();
+    number_of_networks_scanned = WiFi.scanNetworks();
 
     //check if any networks found
-    if (n == 0) {
+    if (number_of_networks_scanned == 0) {
         Serial.println("no networks found");
         return;
     } else {
         //loop through all the networks
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < number_of_networks_scanned; ++i) {
             // Print BSSID, RSSI and SSID for each network found
             Serial.printf("%02x:%02x:%02x:%02x:%02x:%02x",  WiFi.BSSID(i)[0], WiFi.BSSID(i)[1], WiFi.BSSID(i)[2], 
                                                             WiFi.BSSID(i)[3], WiFi.BSSID(i)[4], WiFi.BSSID(i)[5]);
@@ -55,4 +55,5 @@ void scan_wifi() {
             }
         }
     }
+    Serial.println(number_of_networks_scanned);
 }
