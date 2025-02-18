@@ -9,7 +9,7 @@
 
 void scan_wifi();
 void connect_to_wifi(int number_of_attempts = 1, int timeout = 5, bool first_scan = true, const String &SSID = "", const String &Password = "");
-
+void start_AP (const String &SSID = "ESP32-SoftAP", const String &Password = "123456789");
 
 extern std::vector<std::vector<std::string>> scanned_networks;
 extern int number_of_networks_scanned;

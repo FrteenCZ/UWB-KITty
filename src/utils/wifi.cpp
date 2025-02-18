@@ -73,6 +73,8 @@ void connect_to_wifi(int number_of_attempts, int timeout, bool first_scan, const
                 delay(1000);
                 if (WiFi.status() == WL_CONNECTED) {
                     Serial.println("\nSuccessfully connected");
+                    Serial.print("IP Address: ");
+                    Serial.println(WiFi.localIP());
                     return;
                 }
                 Serial.print(".");
@@ -123,6 +125,8 @@ void connect_to_wifi(int number_of_attempts, int timeout, bool first_scan, const
                             delay(1000);
                             if (WiFi.status() == WL_CONNECTED) {
                                 Serial.println("\nSuccessfully connected");
+                                Serial.print("IP Address: ");
+                                Serial.println(WiFi.localIP());
                                 return;
                             }
                             Serial.print(".");
@@ -134,4 +138,15 @@ void connect_to_wifi(int number_of_attempts, int timeout, bool first_scan, const
         }
     }
     Serial.println("unable to connect to any network");
+}
+
+
+
+void start_AP (const String &SSID, const String &Password) {    
+    //setup wifi
+    WiFi.mode(WIFI_AP);
+    WiFi.softAP(SSID, Password);
+    Serial.println("SoftAP Started");
+    Serial.print("IP Address: ");
+    Serial.println(WiFi.softAPIP());
 }
