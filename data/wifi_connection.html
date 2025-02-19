@@ -6,7 +6,7 @@
     <title>Wi-Fi Scanner</title>
     <script>
         async function loadWiFiList() {
-            const response = await fetch("/wifi");
+            const response = await fetch("/wifi/scan");
             const data = await response.json();
             
             let output = "<ul>";
