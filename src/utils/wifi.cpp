@@ -37,13 +37,13 @@ void scan_wifi() {
                     WiFi.BSSID(netIndex)[0], WiFi.BSSID(netIndex)[1], WiFi.BSSID(netIndex)[2], 
                     WiFi.BSSID(netIndex)[3], WiFi.BSSID(netIndex)[4], WiFi.BSSID(netIndex)[5]);
         Serial.print(" - ");
-        Serial.print(-WiFi.RSSI(netIndex));
+        Serial.print(WiFi.RSSI(netIndex));
         Serial.print(" - ");
         Serial.print(WiFi.SSID(netIndex));
         Serial.print("\n");
 
         // Save the network if it's not already in the list
-        addNetworkIfNotExists(WiFi.SSID(netIndex), -WiFi.RSSI(netIndex), WiFi.encryptionType(netIndex));
+        addNetworkIfNotExists(WiFi.SSID(netIndex), WiFi.RSSI(netIndex), WiFi.encryptionType(netIndex));
     }
 }
 
