@@ -15,5 +15,6 @@ void handleLEDOn();
 void handleLEDOff();
 void handleStatus();
 void handleScanNetworks();
+void handleReceiveString();
 
 #endif

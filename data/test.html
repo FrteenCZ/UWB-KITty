@@ -15,7 +15,14 @@
     <p>LED Status: <span id="ledStatus">OFF</span></p>
     <button class="button on" onclick="sendCommand('/led/on')">ON</button>
     <button class="button off" onclick="sendCommand('/led/off')">OFF</button>
+    <br>
     <button class="button scan" onclick="sendCommand('/scan')">Scan</button>
+    <br>
+    <label for="textInput">Enter a string:</label>
+    <input type="text" id="textInput" placeholder="Type something...">
+    <button onclick="sendString()">Send</button>
+
+    <p id="response"></p>
 
     <script>
         function sendCommand(url) {
@@ -25,6 +32,32 @@
                 .catch(error => console.error(error));
         }
 
+
+        function sendString() {
+            let input = document.getElementById("textInput").value;
+            if (!input) {
+                alert("Please enter a string!");
+                return;
+            }
+            
+            fetch("/send?data=" + encodeURIComponent(input))
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById("response").innerText = "Server Response: " + data;
+                })
+                .catch(error => {
+                    document.getElementById("response").innerText = "Error sending data";
+                });
+        }
+
+        // Call sendString() when Enter is pressed in the input field
+        document.getElementById("textInput").addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {  
+                sendString();
+            }
+        });
+
+        
         // Auto-refresh LED status every 2 seconds
         setInterval(() => fetch('/status')
             .then(response => response.json())

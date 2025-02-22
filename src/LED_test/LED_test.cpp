@@ -10,6 +10,7 @@ void LED_test_setup() {
     server.on("/led/off", handleLEDOff);
     server.on("/status", handleStatus);
     server.on("/scan", handleScanNetworks);
+    server.on("/send", handleReceiveString);
 }
 
 void handleRootTest() {
@@ -57,5 +58,15 @@ void handleScanNetworks() {
             Serial.print(WiFi.SSID(i));
             Serial.print("\n");
         }
+    }
+}
+
+void handleReceiveString() {
+    if (server.hasArg("data")) {  // Check if "data" parameter is sent
+        String receivedData = server.arg("data");
+        Serial.println("Received String: " + receivedData);
+        server.send(200, "text/plain", "String received: " + receivedData);
+    } else {
+        server.send(400, "text/plain", "No data received");
     }
 }
