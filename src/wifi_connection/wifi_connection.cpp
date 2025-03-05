@@ -56,6 +56,24 @@ void handleWiFiList() {
 }
 
 
+// Handle Wi-Fi connection request
+/**
+ * @brief Handle HTTP POST request for Wi-Fi connection.
+ * 
+ * This function parses the SSID and password from the request body and attempts to connect to the Wi-Fi network.
+ */
+void handleWiFiConnect() {
+    String ssid = server.arg("ssid");
+    String password = server.arg("password");
+
+    Serial.print("Connecting to ");
+    Serial.println(ssid);
+    Serial.print("Password: ");
+    Serial.println(password);
+
+    connect_to_wifi(1, 5, true, ssid.c_str(), password.c_str());
+}
+
 // Setup Wi-Fi connection routes
 /**
  * @brief Setup HTTP routes for Wi-Fi connection.
@@ -66,4 +84,5 @@ void handleWiFiList() {
 void wifi_connection_setup() {
     server.on("/wifi", handleRootWiFi);
     server.on("/wifi/scan", handleWiFiList);
+    server.on("/wifi/connect", handleWiFiConnect);
 }

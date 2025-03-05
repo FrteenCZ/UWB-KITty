@@ -106,7 +106,6 @@ input[type="password"]:focus {
     </div>
 
     <script>
-        const wifiNetworks = [{"ssid":"test1","rssi":"-69","encryption":"3"},{"ssid":"test2","rssi":"-84","encryption":"0"},{"ssid":"test3","rssi":"-99","encryption":"1"},{"ssid":"test4","rssi":"-109","encryption":"0"},{"ssid":"test5","rssi":"-150","encryption":"0"}];  //await response.json()
         const wifiList = document.getElementById("wifiList");
         let selectedSSID = "";
 
@@ -142,7 +141,7 @@ input[type="password"]:focus {
     `;
 }
 
-    function renderWiFiList() {
+    function renderWiFiList(wifiNetworks) {
         wifiList.innerHTML = "";
         wifiNetworks.forEach(network => {
             let lockIcon = network.encryption == 0 ? "🔓" : "🔒";
@@ -173,7 +172,7 @@ input[type="password"]:focus {
                 return;
             }
             
-            fetch(`/connect?ssid=${encodeURIComponent(selectedSSID)}&password=${encodeURIComponent(password)}`)
+            fetch(`wifi/connect?ssid=${encodeURIComponent(selectedSSID)}&password=${encodeURIComponent(password.value)}`)
                 .then(response => response.text())
                 .then(data => {
                     alert("Response from ESP32: " + data);
@@ -184,7 +183,18 @@ input[type="password"]:focus {
                 });
         }
 
-        renderWiFiList();
+        function fetchWiFiNetworks() {
+            fetch('/wifi/scan')
+                .then(response => response.json())
+                .then(data => {
+                    renderWiFiList(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching WiFi networks:', error);
+                });
+        }
+
+        window.onload = fetchWiFiNetworks;
     </script>
 </body>
 </html>
