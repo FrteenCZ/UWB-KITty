@@ -169,7 +169,7 @@ void handleLocation()
     file.close();
 
     // Parse the string into a JSON document
-    DynamicJsonDocument doc;
+    JsonDocument doc;
     DeserializationError error = deserializeJson(doc, content);
     if (error)
     {
@@ -188,7 +188,7 @@ void handleLocation()
     Serial.printf("Location: %f, %f, %f\n", bestMatch.location[0], bestMatch.location[1], bestMatch.location[2]);
 
     // Create a JSON object for the response
-    DynamicJsonDocument response(1024);
+    JsonDocument response;
     response["name"] = bestMatch.name;
     response["location"][0] = bestMatch.location[0];
     response["location"][1] = bestMatch.location[1];
@@ -205,6 +205,6 @@ void handleLocation()
 // Setup Wi-Fi location routes
 void wifi_location_setup()
 {
-    server.on("/location", handleLocation);
-    server.on("/location.html", handleRootLocation);
+    server.on("/location/request", handleLocation);
+    server.on("/location", handleRootLocation);
 }
