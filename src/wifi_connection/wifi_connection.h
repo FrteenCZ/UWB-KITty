@@ -9,8 +9,6 @@
 extern WebServer server;
 extern std::vector<std::vector<std::string>> scanned_networks;
 
-void handleRootWiFi();
 void wifi_connection_setup();
-void handleWiFiList();
 
 #endif

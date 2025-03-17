@@ -4,6 +4,9 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <WiFi.h>
+#include <SPIFFS.h>
+#include <WebServer.h>
+#include "utils/wifi.h"
 
 class WiFiLocation
 {
@@ -14,7 +17,9 @@ class WiFiLocation
 
 extern WiFiLocation bestMatch;
 extern int number_of_networks_scanned;
+extern WebServer server;
 
 void findMatchingLocation(const JsonObject &stored);
+void wifi_location_setup();
 
 #endif // WIFI_LOCATION_H

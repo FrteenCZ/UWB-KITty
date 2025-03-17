@@ -105,16 +105,13 @@ void connect_to_wifi(int number_of_attempts, int timeout, bool first_scan, const
                 return;
             }
 
-            // Access the JSON arrays for SSIDs and Passwords
-            JsonArray SSIDs = doc["SSIDs"];
-            JsonArray Passwords = doc["Passwords"];
-
+            // Access the JSON array of credentials
+            JsonArray credentials = doc.as<JsonArray>();
 
             // Loop through stored credentials
-            for (size_t credIndex = 0; credIndex < SSIDs.size(); credIndex++) {
-                String autoSSID = SSIDs[credIndex].as<const char*>();           
-                String autoPassword = Passwords[credIndex].as<const char*>();   
-
+            for (JsonObject credential : credentials) {
+                String autoSSID = credential["SSID"].as<String>();           
+                String autoPassword = credential["PASSWORD"].as<String>();   
 
                 // Check if the scanned networks contain the credential's SSID
                 for (const auto &network : scanned_networks) {
