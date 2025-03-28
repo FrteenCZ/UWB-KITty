@@ -6,108 +6,26 @@
     <title>Wi-Fi Scanner</title>
 
     <title>WiFi List</title>
-<style>
-    body {
-    font-family: Arial, sans-serif;
-    background-color:rgb(28, 28, 37);
-    color: rgb(255, 224, 252);
-}
-.wifi-list {
-    list-style: none;
-    padding: 0;
-}
-.wifi-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px;
-    border-bottom: 1px solid rgb(255, 224, 252);
-}
-.connect-btn {
-    background:#441d69;
-    color: rgb(255, 224, 252);
-    border: 2px solid rgb(28, 28, 37);
-    border-radius: 5px;
-    padding: 5px 10px;
-    transition: 0.3s;
-    cursor: pointer;
-}
-.connect-btn:hover {
-            background: rgb(255, 224, 252);
-            color:rgb(28, 28, 37);
-        }
-.modal-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    justify-content: center;
-    align-items: center;
-}
-.modal {
-    background: rgb(28, 28, 37);
-    padding: 20px;
-    width: 300px;
-    text-align: center;
-    border-radius: 10px;
-}
-.close-btn {
-    color:rgb(255, 224, 252);
-    float: right;
-    cursor: pointer;
-    font-size: 20px;
-    border: none;
-    background: none;
-}
-.send-btn {
-    background: #441d69;
-    color: rgb(255, 224, 252);
-    padding: 10px;
-    border: 2px solid rgb(28, 28, 37); /* Blue border */
-    transition: 0.3s;
-    border-radius: 5px;
-    cursor: pointer;
-}
-.send-btn:hover {
-            background: rgb(255, 224, 252);
-            color:rgb(28, 28, 37);
-        }
-input[type="password"] {
-    width: 60%;
-    padding: 10px;
-    margin-top: 10px;
-    border: 2px solid rgb(28, 28, 37); /* Blue border */
-    border-radius: 5px;
-    background-color: rgb(255, 224, 252); /* Light blue background */
-    color: rgb(28, 28, 37); /* Darker text */
-    font-size: 16px;
-}
-
-input[type="password"]:focus {
-    border-color: #0056b3; /* Darker blue on focus */
-    background-color: #e6f2ff; /* Even lighter blue */
-    outline: none;
-}
-
-</style>
+    <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
-    <h1>Available WiFi Networks</h1>
-    <ul class="wifi-list" id="wifiList"></ul>
     
-    <div class="modal-overlay" id="popup">
-        <div class="modal">
-            <button class="close-btn" onclick="closePopup()">✖</button>
-            <h2>Enter WiFi Password</h2>
-            <p id="selectedSSID"></p>
-            <input type="password" id="wifiPassword" placeholder="Enter password...">
-            <button class="send-btn" onclick="sendWiFiCredentials()">Connect</button>
+    <div class="container" style="width: 400px;">
+        <h1>Available WiFi Networks</h1>
+        <ul class="list" id="wifiList"></ul>
+    
+        <div class="modal-overlay" id="popup">
+            <div class="modal">
+                <button class="btn" style="float: right;" onclick="closePopup()">✖</button>
+                <h2>Enter WiFi Password</h2>
+                <p id="selectedSSID"></p>
+                <input type="password" id="wifiPassword" placeholder="Enter password...">
+                <button class="big-btn" onclick="sendWiFiCredentials()">Connect</button>
+            </div>
         </div>
     </div>
-
     <script>
+        const response = [{"ssid":"test1", "rssi":"-69", "encryption":"3"},{"ssid":"test2", "rssi":"-321321", "encryption":"0"}];
         const wifiList = document.getElementById("wifiList");
         let selectedSSID = "";
 
@@ -146,12 +64,12 @@ input[type="password"]:focus {
     function renderWiFiList(wifiNetworks) {
         wifiList.innerHTML = "";
         wifiNetworks.forEach(network => {
-            let lockIcon = network.encryption == 0 ? "🔓" : "🔒";
+            let lockIcon = network.encryption == 0 ? "" : "🔒";
             let listItem = document.createElement("li");
-            listItem.classList.add("wifi-item");
+            listItem.classList.add("list-item");
             listItem.innerHTML = `
-                <span>${getWiFiIcon(network.rssi)} ${lockIcon} ${network.ssid}</span>
-                <button class="connect-btn" onclick="openPopup('${network.ssid}', ${network.encryption})">Connect</button>
+                <span>${getWiFiIcon(network.rssi)} ${network.ssid} ${lockIcon}</span>
+                <button class="btn" style="float: right;"" onclick="openPopup('${network.ssid}', ${network.encryption})">Connect</button>
             `;
             wifiList.appendChild(listItem);
         });
@@ -195,8 +113,8 @@ input[type="password"]:focus {
                     console.error('Error fetching WiFi networks:', error);
                 });
         }
-
-        window.onload = fetchWiFiNetworks;
+        window.onload = renderWiFiList(response);
+        //window.onload = fetchWiFiNetworks;
     </script>
 </body>
 </html>
