@@ -9,8 +9,8 @@ const int onboardledPin = 2;
 #define UWB_PIN_SPI_MOSI  13    // SPI MOSI
 #define UWB_PIN_SPI_SCK   14    // SPI Clock
 #define UWB_PIN_SPI_SS    15    // Chip Select
-#define UWB_PIN_SPI_IRQ   16    // Interrupt
-#define UWB_PIN_SPI_RST   17    // Reset
+#define UWB_PIN_SPI_RST   16    // Reset
+#define UWB_PIN_SPI_IRQ   17    // Interrupt
 
 
 #endif
