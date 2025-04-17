@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>UWB Control Panel</title>
+    <meta charset="UTF-8" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+        }
+        #status {
+            margin-top: 20px;
+        }
+        pre {
+            background: #eee;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>UWB Control Panel</h1>
+
+    <button onclick="startRanging()">Start Ranging</button>
+    <button onclick="stopRanging()">Stop Ranging</button>
+    <button onclick="switchMode()">Switch Mode</button>
+
+    <div id="status">
+        <h2>Status</h2>
+        <pre id="statusData">Loading...</pre>
+    </div>
+
+    <script>
+        function updateStatus() {
+            fetch("/UWB/status")
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("statusData").textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    document.getElementById("statusData").textContent = "Error fetching status.";
+                    console.error(error);
+                });
+        }
+
+        function startRanging() {
+            fetch("/UWB/startRanging").then(updateStatus);
+        }
+
+        function stopRanging() {
+            fetch("/UWB/stopRanging").then(updateStatus);
+        }
+
+        function switchMode() {
+            fetch("/UWB/switchMode").then(updateStatus);
+        }
+
+        // Auto-update status every 2 seconds
+        setInterval(updateStatus, 2000);
+        updateStatus(); // initial load
+    </script>
+</body>
+</html>
