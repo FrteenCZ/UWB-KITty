@@ -6,17 +6,27 @@ bool isAnchor = true;
 bool isAnchor = false;
 #endif
 
+#ifdef STARTRANGING
+bool isRanging = true;
+#else
+bool isRanging = false;
+#endif
+
+float distance = 0.0;
+
 /**
  * @brief Callback function to be called when a new range is available
- * 
+ *
  * This function prints the short address of the distant device, the range, and the RX power.
  */
 void newRange()
 {
+    distance = DW1000Ranging.getDistantDevice()->getRange();
+
     Serial.print("from: ");
     Serial.print(DW1000Ranging.getDistantDevice()->getShortAddress(), HEX);
     Serial.print("\t Range: ");
-    Serial.print(DW1000Ranging.getDistantDevice()->getRange());
+    Serial.print(distance);
     Serial.print(" m");
     Serial.print("\t RX power: ");
     Serial.print(DW1000Ranging.getDistantDevice()->getRXPower());
@@ -86,17 +96,32 @@ void startAsAnchor()
 }
 
 /**
- * @brief Initialize the UWB module
+ * @brief Handle the UWB root path
  *
- * This function initializes the UWB module and starts it as either a tag or an anchor.
+ * This function serves the UWB HTML page when the root path is accessed.
  */
-void UWB_setup()
+void handleUwbRoot()
 {
-    Serial.begin(115200);
-    delay(1000);
-    SPI.begin(14, 12, 13); // SCK, MISO, MOSI
-    // init the configuration
-    DW1000Ranging.initCommunication(UWB_PIN_SPI_RST, UWB_PIN_SPI_SS, UWB_PIN_SPI_IRQ); // Reset, CS, IRQ pin
+    File file = SPIFFS.open("/UWB.html", "r");
+    if (!file)
+    {
+        server.send(500, "text/plain", "Failed to open file");
+        return;
+    }
+    String html = file.readString();
+    file.close();
+    server.send(200, "text/html", html);
+}
+
+/**
+ * @brief Handle the UWB start ranging request
+ *
+ * This function starts the UWB ranging process when the corresponding endpoint is accessed.
+ */
+void handleUwbStartRanging()
+{
+    Serial.println("Starting ranging...");
+    isRanging = true;
 
     if (isAnchor)
     {
@@ -106,6 +131,91 @@ void UWB_setup()
     {
         startAsTag();
     }
+
+    server.send(200, "text/plain", "Ranging started");
+}
+
+/**
+ * @brief Handle the UWB stop ranging request
+ *
+ * This function stops the UWB ranging process when the corresponding endpoint is accessed.
+ */
+void handleUwbStopRanging()
+{
+    Serial.println("Stopping ranging...");
+    isRanging = false;
+    server.send(200, "text/plain", "Ranging stopped");
+}
+
+/**
+ * @brief Handle the UWB switch mode request
+ *
+ * This function switches the UWB module mode between tag and anchor when the corresponding endpoint is accessed.
+ */
+void handleUwbSwitchMode()
+{
+    Serial.println("Switching mode...");
+    switchMode();
+    server.send(200, "text/plain", "Mode switched");
+}
+
+/**
+ * @brief Handle the UWB status request
+ *
+ * This function returns the current status of the UWB module as a JSON response.
+ */
+void handleUwbStatus()
+{
+    StaticJsonDocument<256> status;
+
+    status["isRanging"] = isRanging;
+    status["isAnchor"] = isAnchor;
+    status["distance"] = distance;
+    status["RXPower"] = DW1000Ranging.getDistantDevice()->getRXPower();
+
+    // String shortAddr = String(DW1000Ranging.getCurrentShortAddress(), HEX);
+    // shortAddr.toUpperCase();
+    // status["deviceAddress"] = shortAddr;
+    
+    String otherAddr = String(DW1000Ranging.getDistantDevice()->getShortAddress(), HEX);
+    otherAddr.toUpperCase();
+    status["otherDeviceAddress"] = otherAddr;
+    
+
+    String json;
+    serializeJson(status, json);
+    server.send(200, "application/json", json);
+}
+
+/**
+ * @brief Initialize the UWB module
+ *
+ * This function initializes the UWB module and starts it as either a tag or an anchor.
+ */
+void UWB_setup()
+{
+    SPI.begin(14, 12, 13); // SCK, MISO, MOSI
+    // init the configuration
+    DW1000Ranging.initCommunication(UWB_PIN_SPI_RST, UWB_PIN_SPI_SS, UWB_PIN_SPI_IRQ); // Reset, CS, IRQ pin
+
+    if (isRanging)
+    {
+        if (isAnchor)
+        {
+            startAsAnchor();
+        }
+        else
+        {
+            startAsTag();
+        }
+    }
+
+    // Setup web server routes
+    server.on("/UWB.html", handleUwbRoot);
+    server.on("/UWB/startRanging", handleUwbStartRanging);
+    server.on("/UWB/stopRanging", handleUwbStopRanging);
+    server.on("/UWB/switchMode", handleUwbSwitchMode);
+    server.on("/UWB/status", handleUwbStatus);
 }
 
 /**
@@ -115,7 +225,10 @@ void UWB_setup()
  */
 void UWB_loop()
 {
-    DW1000Ranging.loop();
+    if (isRanging)
+    {
+        DW1000Ranging.loop();
+    }
 }
 
 /**
