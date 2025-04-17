@@ -6,6 +6,11 @@ bool isAnchor = true;
 bool isAnchor = false;
 #endif
 
+/**
+ * @brief Callback function to be called when a new range is available
+ * 
+ * This function prints the short address of the distant device, the range, and the RX power.
+ */
 void newRange()
 {
     Serial.print("from: ");
@@ -18,12 +23,22 @@ void newRange()
     Serial.println(" dBm");
 }
 
+/**
+ * @brief Callback function to be called when a new device is added
+ *
+ * @param device Pointer to the new device
+ */
 void newDevice(DW1000Device *device)
 {
     Serial.print("New device added -> Short: ");
     Serial.println(device->getShortAddress(), HEX);
 }
 
+/**
+ * @brief Callback function to be called when a new blink device is added
+ *
+ * @param device Pointer to the new blink device
+ */
 void newBlink(DW1000Device *device)
 {
     Serial.print("blink; 1 device added ! -> ");
@@ -31,12 +46,22 @@ void newBlink(DW1000Device *device)
     Serial.println(device->getShortAddress(), HEX);
 }
 
+/**
+ * @brief Callback function to be called when a device is inactive
+ *
+ * @param device Pointer to the inactive device
+ */
 void inactiveDevice(DW1000Device *device)
 {
     Serial.print("delete inactive device: ");
     Serial.println(device->getShortAddress(), HEX);
 }
 
+/**
+ * @brief Start the UWB module as a tag
+ *
+ * This function initializes the UWB module as a tag device.
+ */
 void startAsTag()
 {
     Serial.println("Starting as TAG...");
@@ -46,6 +71,11 @@ void startAsTag()
     DW1000Ranging.startAsTag("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_LONGDATA_RANGE_ACCURACY);
 }
 
+/**
+ * @brief Start the UWB module as an anchor
+ *
+ * This function initializes the UWB module as an anchor device.
+ */
 void startAsAnchor()
 {
     Serial.println("Starting as ANCHOR...");
@@ -55,7 +85,11 @@ void startAsAnchor()
     DW1000Ranging.startAsAnchor("82:17:5B:D5:A9:9A:E2:9C", DW1000.MODE_LONGDATA_RANGE_ACCURACY);
 }
 
-
+/**
+ * @brief Initialize the UWB module
+ *
+ * This function initializes the UWB module and starts it as either a tag or an anchor.
+ */
 void UWB_setup()
 {
     Serial.begin(115200);
@@ -74,11 +108,21 @@ void UWB_setup()
     }
 }
 
+/**
+ * @brief Loop function for the UWB module
+ *
+ * This function is called in the main loop to handle UWB communication.
+ */
 void UWB_loop()
 {
     DW1000Ranging.loop();
 }
 
+/**
+ * @brief Switch the mode of the UWB module between tag and anchor
+ *
+ * This function switches the mode of the UWB module and reinitializes it.
+ */
 void switchMode()
 {
     Serial.println("Switching mode...");

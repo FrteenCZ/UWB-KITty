@@ -15,5 +15,6 @@ extern bool isAnchor; // true if the device is an anchor, false if it is a tag
 
 void UWB_setup();
 void UWB_loop();
+void switchMode();
 
 #endif
