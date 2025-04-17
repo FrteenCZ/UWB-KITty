@@ -5,6 +5,7 @@
 void LED_test_setup() {
     pinMode(onboardledPin, OUTPUT);
 
+    server.on("/test.html", handleRootTest);
     server.on("/test", handleRootTest);
     server.on("/led/on", handleLEDOn);
     server.on("/led/off", handleLEDOff);

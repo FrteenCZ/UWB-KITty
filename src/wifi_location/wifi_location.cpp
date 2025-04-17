@@ -205,6 +205,7 @@ void handleLocation()
 // Setup Wi-Fi location routes
 void wifi_location_setup()
 {
-    server.on("/location/request", handleLocation);
+    server.on("/location.html", handleRootLocation);
     server.on("/location", handleRootLocation);
+    server.on("/location/request", handleLocation);
 }
