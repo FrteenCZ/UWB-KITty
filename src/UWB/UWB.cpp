@@ -12,12 +12,62 @@ bool isRanging = true;
 bool isRanging = false;
 #endif
 
-const int measurementBufferSize = 10;
+const int measurementBufferSize = 3;
 float measurementBuffer[measurementBufferSize];
 int measurementBufferIndex;
 
 float distance = 0.0;
 float avgDistance = 0.0;
+
+// Calibration variables
+bool isCalibrating = false;
+int minDelay = 16300;
+int maxDelay = 18000;
+int bestDelay = 0;
+float calibrationTarget = 0.0;
+float tolerance = 0.05;
+
+/**
+ * @brief Calibrate the UWB module
+ *
+ * This function calibrates the UWB module by adjusting the antenna delay based on the measured distance.
+ */
+void calibrate()
+{
+    if (abs(calibrationTarget - distance) < tolerance)
+    {
+        Serial.println("Calibration successful");
+        isCalibrating = false;
+        return;
+    }
+
+    if (maxDelay - minDelay <= 1)
+    {
+        Serial.println("Calibration converged (delay range too small)");
+        isCalibrating = false;
+        return;
+    }
+
+    int midDelay = (minDelay + maxDelay) / 2;
+
+    if (avgDistance > calibrationTarget)
+    {
+        Serial.println("Increasing delay");
+        minDelay = midDelay;
+        bestDelay = midDelay;
+    }
+    else
+    {
+        Serial.println("Decreasing delay");
+        maxDelay = midDelay;
+        bestDelay = midDelay;
+    }
+
+    Serial.print("Current delay: ");
+    Serial.print(midDelay);
+
+    DW1000.setAntennaDelay(bestDelay);
+}
 
 /**
  * @brief Callback function to be called when a new range is available
@@ -46,6 +96,11 @@ void newRange()
     Serial.print("\t RX power: ");
     Serial.print(DW1000Ranging.getDistantDevice()->getRXPower());
     Serial.println(" dBm");
+
+    if (isCalibrating)
+    {
+        calibrate();
+    }
 }
 
 /**
@@ -185,7 +240,7 @@ void handleUwbStatus()
 
     status["isRanging"] = isRanging;
     status["isAnchor"] = isAnchor;
-    status["distance"] = distance;
+    status["distance"] = avgDistance;
     status["RXPower"] = DW1000Ranging.getDistantDevice()->getRXPower();
 
     // String shortAddr = String(DW1000Ranging.getCurrentShortAddress(), HEX);
@@ -200,6 +255,34 @@ void handleUwbStatus()
     serializeJson(status, json);
     server.send(200, "application/json", json);
 }
+
+/**
+ * @brief Handle the UWB calibration request
+ *
+ * This function starts the UWB calibration process when the corresponding endpoint is accessed.
+ */
+void handleUwbCalibrate() {
+    if (!server.hasArg("value")) {
+        server.send(400, "text/plain", "Missing 'value' parameter");
+        return;
+    }
+
+    float newTarget = server.arg("value").toFloat();
+    if (newTarget <= 0) {
+        server.send(400, "text/plain", "Invalid distance");
+        return;
+    }
+
+    int minDelay = 16300;
+    int maxDelay = 17000;
+    int bestDelay = 0;
+
+    calibrationTarget = newTarget;
+    isCalibrating = true;
+
+    server.send(200, "text/plain", "Calibration started with target: " + String(calibrationTarget));
+}
+
 
 /**
  * @brief Initialize the UWB module
@@ -226,10 +309,12 @@ void UWB_setup()
 
     // Setup web server routes
     server.on("/UWB.html", handleUwbRoot);
+    server.on("/UWB", handleUwbRoot);
     server.on("/UWB/startRanging", handleUwbStartRanging);
     server.on("/UWB/stopRanging", handleUwbStopRanging);
     server.on("/UWB/switchMode", handleUwbSwitchMode);
     server.on("/UWB/status", handleUwbStatus);
+    server.on("/UWB/calibrate", handleUwbCalibrate);
 }
 
 /**
