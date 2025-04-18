@@ -12,7 +12,12 @@ bool isRanging = true;
 bool isRanging = false;
 #endif
 
+const int measurementBufferSize = 10;
+float measurementBuffer[measurementBufferSize];
+int measurementBufferIndex;
+
 float distance = 0.0;
+float avgDistance = 0.0;
 
 /**
  * @brief Callback function to be called when a new range is available
@@ -23,11 +28,21 @@ void newRange()
 {
     distance = DW1000Ranging.getDistantDevice()->getRange();
 
+    measurementBuffer[measurementBufferIndex] = distance;
+    measurementBufferIndex = (measurementBufferIndex + 1) % measurementBufferSize;
+    float sum = 0;
+    for (int i = 0; i < measurementBufferSize; i++)
+    {
+        sum += measurementBuffer[i];
+    }
+    avgDistance = sum / measurementBufferSize;
+
     Serial.print("from: ");
     Serial.print(DW1000Ranging.getDistantDevice()->getShortAddress(), HEX);
     Serial.print("\t Range: ");
-    Serial.print(distance);
+    Serial.print(avgDistance);
     Serial.print(" m");
+    Serial.printf(" (%0.2f m)", distance);
     Serial.print("\t RX power: ");
     Serial.print(DW1000Ranging.getDistantDevice()->getRXPower());
     Serial.println(" dBm");
@@ -176,11 +191,10 @@ void handleUwbStatus()
     // String shortAddr = String(DW1000Ranging.getCurrentShortAddress(), HEX);
     // shortAddr.toUpperCase();
     // status["deviceAddress"] = shortAddr;
-    
+
     String otherAddr = String(DW1000Ranging.getDistantDevice()->getShortAddress(), HEX);
     otherAddr.toUpperCase();
     status["otherDeviceAddress"] = otherAddr;
-    
 
     String json;
     serializeJson(status, json);
