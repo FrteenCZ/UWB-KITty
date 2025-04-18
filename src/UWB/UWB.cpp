@@ -21,8 +21,8 @@ float avgDistance = 0.0;
 
 // Calibration variables
 bool isCalibrating = false;
-int minDelay = 16300;
-int maxDelay = 18000;
+int minDelay = 15600;
+int maxDelay = 16700;
 int bestDelay = 0;
 float calibrationTarget = 0.0;
 float tolerance = 0.05;
@@ -36,7 +36,10 @@ void calibrate()
 {
     if (abs(calibrationTarget - distance) < tolerance)
     {
-        Serial.println("Calibration successful");
+        Serial.print("Calibration successful");
+        Serial.print(" (delay: ");
+        Serial.print(bestDelay);
+        Serial.println(")");
         isCalibrating = false;
         return;
     }
@@ -50,21 +53,21 @@ void calibrate()
 
     int midDelay = (minDelay + maxDelay) / 2;
 
-    if (avgDistance > calibrationTarget)
-    {
-        Serial.println("Increasing delay");
-        minDelay = midDelay;
-        bestDelay = midDelay;
-    }
-    else
+    if (avgDistance < calibrationTarget)
     {
         Serial.println("Decreasing delay");
         maxDelay = midDelay;
         bestDelay = midDelay;
     }
+    else
+    {
+        Serial.println("Increasing delay");
+        minDelay = midDelay;
+        bestDelay = midDelay;
+    }
 
-    Serial.print("Current delay: ");
-    Serial.print(midDelay);
+    Serial.printf("Current delay: %d, Distance: %.2f, Target: %.2f\n", bestDelay, avgDistance, calibrationTarget);
+    Serial.printf("Min delay: %d, Max delay: %d\n", minDelay, maxDelay);
 
     DW1000.setAntennaDelay(bestDelay);
 }
@@ -99,7 +102,10 @@ void newRange()
 
     if (isCalibrating)
     {
-        calibrate();
+        if (measurementBufferIndex == 0)
+        {
+            calibrate();
+        }
     }
 }
 
@@ -261,28 +267,30 @@ void handleUwbStatus()
  *
  * This function starts the UWB calibration process when the corresponding endpoint is accessed.
  */
-void handleUwbCalibrate() {
-    if (!server.hasArg("value")) {
+void handleUwbCalibrate()
+{
+    if (!server.hasArg("value"))
+    {
         server.send(400, "text/plain", "Missing 'value' parameter");
         return;
     }
 
     float newTarget = server.arg("value").toFloat();
-    if (newTarget <= 0) {
+    if (newTarget <= 0)
+    {
         server.send(400, "text/plain", "Invalid distance");
         return;
     }
 
-    int minDelay = 16300;
-    int maxDelay = 17000;
-    int bestDelay = 0;
+    minDelay = 15600;
+    maxDelay = 16700;
+    bestDelay = 0;
 
     calibrationTarget = newTarget;
     isCalibrating = true;
 
     server.send(200, "text/plain", "Calibration started with target: " + String(calibrationTarget));
 }
-
 
 /**
  * @brief Initialize the UWB module
@@ -306,6 +314,9 @@ void UWB_setup()
             startAsTag();
         }
     }
+
+    // Set the antenna delay
+    DW1000.setAntennaDelay(16150);
 
     // Setup web server routes
     server.on("/UWB.html", handleUwbRoot);
