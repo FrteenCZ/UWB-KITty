@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>UWB Control Panel</title>
     <meta charset="UTF-8" />
@@ -8,19 +9,23 @@
             font-family: Arial, sans-serif;
             padding: 20px;
         }
+
         button {
             padding: 10px 20px;
             margin: 5px;
         }
+
         #status {
             margin-top: 20px;
         }
+
         pre {
             background: #eee;
             padding: 10px;
         }
     </style>
 </head>
+
 <body>
     <h1>UWB Control Panel</h1>
 
@@ -62,5 +67,24 @@
         setInterval(updateStatus, 2000);
         updateStatus(); // initial load
     </script>
+
+    <h1>Calibration</h1>
+
+    <input type="number" step="0.1" id="targetInput" placeholder="Target distance (m)">
+    <button onclick="startCalibration()">Start Calibration</button>
+
+    <p id="calibrationStatus"></p>
+
+    <script>
+        function startCalibration() {
+            const target = document.getElementById("targetInput").value;
+            fetch(`/UWB/calibrate?value=${target}`)
+                .then(response => response.text())
+                .then(text => {
+                    document.getElementById("calibrationStatus").textContent = text;
+                });
+        }
+    </script>
 </body>
+
 </html>
