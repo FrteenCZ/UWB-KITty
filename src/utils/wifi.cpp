@@ -111,7 +111,7 @@ void connect_to_wifi(int number_of_attempts, int timeout, bool first_scan, const
             // Loop through stored credentials
             for (JsonObject credential : credentials) {
                 String autoSSID = credential["SSID"].as<String>();           
-                String autoPassword = credential["PASSWORD"].as<String>();   
+                String autoPassword = credential["Password"].as<String>();   
 
                 // Check if the scanned networks contain the credential's SSID
                 for (const auto &network : scanned_networks) {

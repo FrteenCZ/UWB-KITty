@@ -82,7 +82,8 @@ void handleWiFiConnect() {
  * It registers the handlers for the root Wi-Fi page and the Wi-Fi scan list.
  */
 void wifi_connection_setup() {
-    server.on("/wifi", handleRootWiFi);
+    server.on("/wifi_connection.html", handleRootWiFi);
+    server.on("/wifi_connection", handleRootWiFi);
     server.on("/wifi/scan", handleWiFiList);
     server.on("/wifi/connect", handleWiFiConnect);
 }
