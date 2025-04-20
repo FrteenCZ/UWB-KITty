@@ -35,6 +35,19 @@ body {
             background: rgb(255, 224, 252);
             color:rgb(28, 28, 37);
         }
+.big-btn {
+    background:#441d69;
+    color: rgb(255, 224, 252);
+    border: 2px solid rgb(28, 28, 37);
+    border-radius: 5px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+.big-btn:hover {
+            background: rgb(255, 224, 252);
+            color:rgb(28, 28, 37);
+        }
 .modal-overlay {
     display: none;
     position: fixed;
