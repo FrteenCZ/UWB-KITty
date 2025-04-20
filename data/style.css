@@ -30,6 +30,7 @@ body {
     padding: 5px 10px;
     cursor: pointer;
     transition: 0.3s;
+    text-decoration: none;
 }
 .btn:hover {
             background: rgb(255, 224, 252);
@@ -43,6 +44,7 @@ body {
     padding: 10px 20px;
     cursor: pointer;
     transition: 0.3s;
+    text-decoration: none;
 }
 .big-btn:hover {
             background: rgb(255, 224, 252);
