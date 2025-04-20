@@ -4,38 +4,37 @@
 <head>
     <title>UWB Control Panel</title>
     <meta charset="UTF-8" />
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-        }
-
-        button {
-            padding: 10px 20px;
-            margin: 5px;
-        }
-
-        #status {
-            margin-top: 20px;
-        }
-
-        pre {
-            background: #eee;
-            padding: 10px;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css"> <!-- Link to your CSS -->
 </head>
 
 <body>
-    <h1>UWB Control Panel</h1>
+    <div class="container">
+        <h1>UWB Control Panel</h1>
 
-    <button onclick="startRanging()">Start Ranging</button>
-    <button onclick="stopRanging()">Stop Ranging</button>
-    <button onclick="switchMode()">Switch Mode</button>
+        <div class="button-group">
+            <button class="big-btn" onclick="startRanging()">Start Ranging</button>
+            <button class="big-btn" onclick="stopRanging()">Stop Ranging</button>
+            <button class="big-btn" onclick="switchMode()">Switch Mode</button>
+        </div>
 
-    <div id="status">
-        <h2>Status</h2>
-        <pre id="statusData">Loading...</pre>
+        <div id="status" class="status-box">
+            <h2>Status</h2>
+            <pre id="statusData">Loading...</pre>
+        </div>
+
+        <!-- Button to open the calibration popup -->
+        <button class="btn" onclick="openCalibrationModal()">Calibration Menu</button>
+
+        <!-- Calibration Modal -->
+        <div id="calibrationModal" class="modal-overlay">
+            <div class="modal">
+                <h2>Calibration</h2>
+                <input type="number" step="0.1" id="targetInput" placeholder="Target distance (m)">
+                <button class="big-btn" onclick="startCalibration()">Start Calibration</button>
+                <p id="calibrationStatus"></p>
+                <button class="btn" onclick="closeCalibrationModal()">Close</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -63,19 +62,6 @@
             fetch("/UWB/switchMode").then(updateStatus);
         }
 
-        // Auto-update status every 2 seconds
-        setInterval(updateStatus, 2000);
-        updateStatus(); // initial load
-    </script>
-
-    <h1>Calibration</h1>
-
-    <input type="number" step="0.1" id="targetInput" placeholder="Target distance (m)">
-    <button onclick="startCalibration()">Start Calibration</button>
-
-    <p id="calibrationStatus"></p>
-
-    <script>
         function startCalibration() {
             const target = document.getElementById("targetInput").value;
             fetch(`/UWB/calibrate?value=${target}`)
@@ -84,6 +70,18 @@
                     document.getElementById("calibrationStatus").textContent = text;
                 });
         }
+
+        function openCalibrationModal() {
+            document.getElementById("calibrationModal").style.display = "flex";
+        }
+
+        function closeCalibrationModal() {
+            document.getElementById("calibrationModal").style.display = "none";
+        }
+
+        // Auto-update status every 2 seconds
+        setInterval(updateStatus, 2000);
+        updateStatus(); // initial load
     </script>
 </body>
 
