@@ -12,5 +12,7 @@ const int onboardledPin = 2;
 #define UWB_PIN_SPI_RST   16    // Reset
 #define UWB_PIN_SPI_IRQ   17    // Interrupt
 
+// Define the default antenna delay
+#define DEFAULT_ANTENNA_DELAY 16150 // Default antenna delay in picoseconds
 
 #endif

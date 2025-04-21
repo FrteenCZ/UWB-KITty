@@ -6,11 +6,12 @@
 #include <WebServer.h>
 #include <SPIFFS.h>
 #include <ArduinoJson.h>
+#include <Preferences.h>
 
 #include "config.h"
 
 extern WebServer server;
-
+extern Preferences preferences;
 
 extern bool isAnchor; // true if the device is an anchor, false if it is a tag
 extern float distance; // distance between the tag and the anchor

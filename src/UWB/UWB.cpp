@@ -41,6 +41,11 @@ void calibrate()
         Serial.print(bestDelay);
         Serial.println(")");
         isCalibrating = false;
+
+        //Save the best delay to preferences
+        preferences.begin("UWB", false);
+        preferences.putInt("antennaDelay", bestDelay);
+        preferences.end();
         return;
     }
 
@@ -69,7 +74,7 @@ void calibrate()
     Serial.printf("Current delay: %d, Distance: %.2f, Target: %.2f\n", bestDelay, avgDistance, calibrationTarget);
     Serial.printf("Min delay: %d, Max delay: %d\n", minDelay, maxDelay);
 
-    DW1000.setAntennaDelay(bestDelay);
+    // DW1000.setAntennaDelay(bestDelay);
 }
 
 /**
@@ -197,7 +202,11 @@ void handleUwbRoot()
 void handleUwbStartRanging()
 {
     Serial.println("Starting ranging...");
+
     isRanging = true;
+    preferences.begin("UWB", false);
+    preferences.putBool("isRanging", isRanging);
+    preferences.end();
 
     if (isAnchor)
     {
@@ -219,7 +228,12 @@ void handleUwbStartRanging()
 void handleUwbStopRanging()
 {
     Serial.println("Stopping ranging...");
+
     isRanging = false;
+    preferences.begin("UWB", false);
+    preferences.putBool("isRanging", isRanging);
+    preferences.end();
+
     server.send(200, "text/plain", "Ranging stopped");
 }
 
@@ -275,6 +289,12 @@ void handleUwbCalibrate()
         return;
     }
 
+    if (isAnchor)
+    {
+        server.send(400, "text/plain", "Calibration is only available in tag mode");
+        return;
+    }
+
     float newTarget = server.arg("value").toFloat();
     if (newTarget <= 0)
     {
@@ -299,6 +319,13 @@ void handleUwbCalibrate()
  */
 void UWB_setup()
 {
+    // Load preferences
+    preferences.begin("UWB", true);
+    isRanging = preferences.getBool("isRanging", false);
+    isAnchor = preferences.getBool("isAnchor", false);
+    bestDelay = preferences.getInt("antennaDelay", DEFAULT_ANTENNA_DELAY);
+    preferences.end();
+
     SPI.begin(14, 12, 13); // SCK, MISO, MOSI
     // init the configuration
     DW1000Ranging.initCommunication(UWB_PIN_SPI_RST, UWB_PIN_SPI_SS, UWB_PIN_SPI_IRQ); // Reset, CS, IRQ pin
@@ -316,7 +343,7 @@ void UWB_setup()
     }
 
     // Set the antenna delay
-    DW1000.setAntennaDelay(16150);
+    // DW1000.setAntennaDelay(16150);
 
     // Setup web server routes
     server.on("/UWB.html", handleUwbRoot);
@@ -359,11 +386,23 @@ void switchMode()
     if (isAnchor)
     {
         isAnchor = false;
+        preferences.begin("UWB", false);
+        preferences.putBool("isAnchor", isAnchor);
+        preferences.end();
+
         startAsTag();
     }
     else
     {
         isAnchor = true;
+        preferences.begin("UWB", false);
+        preferences.putBool("isAnchor", isAnchor);
+        preferences.end();
+
         startAsAnchor();
     }
+
+    Serial.print("Antenna delay: ");
+    Serial.println(bestDelay);
+    // DW1000.setAntennaDelay(bestDelay);
 }
