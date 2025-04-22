@@ -12,7 +12,7 @@ bool isRanging = true;
 bool isRanging = false;
 #endif
 
-const int measurementBufferSize = 3;
+const int measurementBufferSize = 10;
 float measurementBuffer[measurementBufferSize];
 int measurementBufferIndex;
 
@@ -21,8 +21,8 @@ float avgDistance = 0.0;
 
 // Calibration variables
 bool isCalibrating = false;
-int minDelay = 15600;
-int maxDelay = 16700;
+int minDelay;
+int maxDelay;
 int bestDelay = 0;
 float calibrationTarget = 0.0;
 float tolerance = 0.05;
@@ -42,7 +42,7 @@ void calibrate()
         Serial.println(")");
         isCalibrating = false;
 
-        //Save the best delay to preferences
+        // Save the best delay to preferences
         preferences.begin("UWB", false);
         preferences.putInt("antennaDelay", bestDelay);
         preferences.end();
@@ -303,7 +303,7 @@ void handleUwbCalibrate()
     }
 
     minDelay = 15600;
-    maxDelay = 16700;
+    maxDelay = 17500;
     bestDelay = 0;
 
     calibrationTarget = newTarget;
@@ -327,6 +327,7 @@ void UWB_setup()
     preferences.end();
 
     SPI.begin(14, 12, 13); // SCK, MISO, MOSI
+
     // init the configuration
     DW1000Ranging.initCommunication(UWB_PIN_SPI_RST, UWB_PIN_SPI_SS, UWB_PIN_SPI_IRQ); // Reset, CS, IRQ pin
 
@@ -342,8 +343,13 @@ void UWB_setup()
         }
     }
 
+    delay(1000);
+    switchMode();
+    delay(1000);
+    switchMode();
+
     // Set the antenna delay
-    // DW1000.setAntennaDelay(16150);
+    DW1000.setAntennaDelay(17000);
 
     // Setup web server routes
     server.on("/UWB.html", handleUwbRoot);
