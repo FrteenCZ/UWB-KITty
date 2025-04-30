@@ -13,6 +13,7 @@
 #include "UWB/UWB.h"
 #include "utils/wifi.h"
 #include "Preferences.h"
+#include "serial_control/serial_control.h"
 
 
 std::vector<std::vector<std::string>> scanned_networks; // Stores scanned networks

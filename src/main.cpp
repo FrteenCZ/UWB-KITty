@@ -82,6 +82,8 @@ void setup()
 
 void loop()
 {
+    // Handle serial input
+    handleSerialInput();
 
     server.handleClient();
     UWB_loop();
