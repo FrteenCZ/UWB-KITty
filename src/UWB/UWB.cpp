@@ -201,21 +201,7 @@ void handleUwbRoot()
  */
 void handleUwbStartRanging()
 {
-    Serial.println("Starting ranging...");
-
-    isRanging = true;
-    preferences.begin("UWB", false);
-    preferences.putBool("isRanging", isRanging);
-    preferences.end();
-
-    if (isAnchor)
-    {
-        startAsAnchor();
-    }
-    else
-    {
-        startAsTag();
-    }
+    UWB_start();
 
     server.send(200, "text/plain", "Ranging started");
 }
@@ -227,12 +213,7 @@ void handleUwbStartRanging()
  */
 void handleUwbStopRanging()
 {
-    Serial.println("Stopping ranging...");
-
-    isRanging = false;
-    preferences.begin("UWB", false);
-    preferences.putBool("isRanging", isRanging);
-    preferences.end();
+    UWB_stop();
 
     server.send(200, "text/plain", "Ranging stopped");
 }
@@ -245,7 +226,7 @@ void handleUwbStopRanging()
 void handleUwbSwitchMode()
 {
     Serial.println("Switching mode...");
-    switchMode();
+    UWB_switchMode();
     server.send(200, "text/plain", "Mode switched");
 }
 
@@ -343,10 +324,11 @@ void UWB_setup()
         }
     }
 
+    // dont ask me how, but this works :)
     delay(1000);
-    switchMode();
+    UWB_switchMode();
     delay(1000);
-    switchMode();
+    UWB_switchMode();
 
     // Set the antenna delay
     DW1000.setAntennaDelay(17000);
