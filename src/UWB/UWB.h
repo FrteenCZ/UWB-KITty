@@ -21,6 +21,8 @@ extern float avgDistance; // average distance calculated from the measurements
 
 void UWB_setup();
 void UWB_loop();
-void switchMode();
+void UWB_switchMode();
+void UWB_start();
+void UWB_stop();
 
 #endif

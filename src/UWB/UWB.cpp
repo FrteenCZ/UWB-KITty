@@ -379,7 +379,7 @@ void UWB_loop()
  *
  * This function switches the mode of the UWB module and reinitializes it.
  */
-void switchMode()
+void UWB_switchMode()
 {
     Serial.println("Switching mode...");
 
@@ -411,4 +411,31 @@ void switchMode()
     Serial.print("Antenna delay: ");
     Serial.println(bestDelay);
     // DW1000.setAntennaDelay(bestDelay);
+}
+
+void UWB_start()
+{
+    Serial.println("Starting UWB...");
+    isRanging = true;
+    preferences.begin("UWB", false);
+    preferences.putBool("isRanging", isRanging);
+    preferences.end();
+
+    if (isAnchor)
+    {
+        startAsAnchor();
+    }
+    else
+    {
+        startAsTag();
+    }
+}
+
+void UWB_stop()
+{
+    Serial.println("Stopping UWB...");
+    isRanging = false;
+    preferences.begin("UWB", false);
+    preferences.putBool("isRanging", isRanging);
+    preferences.end();
 }
