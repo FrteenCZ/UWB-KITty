@@ -1,5 +1,5 @@
 import bpy
-from ..draw.blf_text import draw_text
+from ..draw.coordinates import draw_coordinates
 
 _draw_handle = None
 
@@ -13,7 +13,7 @@ class VIEW3D_OT_toggle_tracking(bpy.types.Operator):
 
         if _draw_handle is None:
             _draw_handle = bpy.types.SpaceView3D.draw_handler_add(
-                draw_text, (self, context), 'WINDOW', 'POST_PIXEL'
+                draw_coordinates, (self, context), 'WINDOW', 'POST_PIXEL'
             )
             self.report({'INFO'}, "Tracking enabled.")
         else:

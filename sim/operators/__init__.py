@@ -1,7 +1,8 @@
-from . import draw_toggle
+from . import draw_toggle, draw_distances_toggle
 
 modules = [
     draw_toggle,
+    draw_distances_toggle,
 ]
 
 

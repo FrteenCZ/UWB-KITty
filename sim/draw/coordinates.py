@@ -1,11 +1,9 @@
 import bpy
 import blf
 
-OBJECT_NAME = "Cube"  # Replace with your object name
 
-
-def draw_text(self, context):
-    obj = bpy.data.objects.get(OBJECT_NAME)
+def draw_coordinates(self, context):
+    obj = context.active_object
     if obj:
         x = obj.location.x
         y = obj.location.y
@@ -23,4 +21,4 @@ def draw_text(self, context):
     else:
         blf.position(0, 50, 50, 0)
         blf.size(0, 20)
-        blf.draw(0, f"Object '{OBJECT_NAME}' not found")
+        blf.draw(0, f"Object '{obj.name}' not found")
