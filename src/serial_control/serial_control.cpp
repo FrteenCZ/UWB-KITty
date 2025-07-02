@@ -1,6 +1,6 @@
 #include "serial_control.h"
 
-bool is2D = true;     // Default assumption
+bool is2D = false;    // Default assumption
 bool modeSet = false; // Flag to lock mode after first input
 
 trilateration trilat;
@@ -50,40 +50,115 @@ void handleSerialInput()
             if (sscanf(input.c_str(), "cords[%f,%f,%f],%f", &x, &y, &z, &d) == 4 ||
                 sscanf(input.c_str(), "cords[%f,%f,%f]", &x, &y, &z) == 3)
             {
-                if (sscanf(input.c_str(), "cords[%f,%f,%f]", &x, &y, &z) == 3) {
+                if (sscanf(input.c_str(), "cords[%f,%f,%f]", &x, &y, &z) == 3)
+                {
                     d = distance; // Use the own measured distance
                 }
                 if (is2D)
                 {
                     Serial.println("Warning: Input is 3D but mode is set to 2D. Ignoring z-coordinate.");
-                    trilat.update({x, y, d});
+                    trilat.updateSinglePoint({x, y, d});
                 }
                 else
                 {
-                    trilat.update({x, y, z, d});
+                    trilat.updateSinglePoint({x, y, z, d});
                 }
             }
             else if (sscanf(input.c_str(), "cords[%f,%f],%f", &x, &y, &d) == 3 ||
                      sscanf(input.c_str(), "cords[%f,%f]", &x, &y) == 2)
             {
-                if (sscanf(input.c_str(), "cords[%f,%f]", &x, &y) == 2) {
+                if (sscanf(input.c_str(), "cords[%f,%f]", &x, &y) == 2)
+                {
                     d = distance; // Use the own measured distance
                 }
                 if (!is2D)
                 {
                     Serial.println("Warning: Input is 2D but mode is set to 3D. Providing default z=0.");
                     z = 0;
-                    trilat.update({x, y, z, d});
+                    trilat.updateSinglePoint({x, y, z, d});
                 }
                 else
                 {
-                    trilat.update({x, y, d});
+                    trilat.updateSinglePoint({x, y, d});
                 }
             }
             else
             {
                 Serial.println("Invalid input format. Expected format: cords[x,y,z],d or cords[x,y],d or cords[x,y,z] or cords[x,y]");
             }
+        }
+        else if (input.startsWith("points"))
+        {
+            // Allocate a static JSON document (size depends on JSON size)
+            JsonDocument doc;
+
+            DeserializationError error = deserializeJson(doc, input.substring(7));
+
+            if (error)
+            {
+                Serial.print(F("deserializeJson() failed: "));
+                Serial.println(error.f_str());
+                return;
+            }
+
+            JsonArray arr = doc.as<JsonArray>();
+
+            int count = arr.size();
+            int numOfDimensions = is2D ? 2 : 3;
+
+            Matrix cords(count, numOfDimensions);
+            Matrix distances(count, 1);
+
+            // Check if the dimensions match the input
+            if (is2D && arr[0]["location"].size() == 3)
+            {
+                Serial.println("Warning: Input is 3D but mode is set to 2D. Ignoring z-coordinate.");
+            }
+            else if (!is2D && arr[0]["location"].size() == 2)
+            {
+                Serial.println("Warning: Input is 2D but mode is set to 3D. Providing default z=0.");
+            }
+
+            // Parse the array
+            for (int i = 0; i < count; i++)
+            {
+                JsonObject obj = arr[i].as<JsonObject>();
+
+                DataPoint p;
+                // p.name = obj["name"].as<String>();
+                p.x = obj["location"]["x"].as<float>();
+                p.y = obj["location"]["y"].as<float>();
+                if (obj["location"].size() == 3)
+                {
+                    p.z = obj["location"]["z"].as<float>();
+                }
+                else
+                {
+                    p.z = 0; // Default z-coordinate for 2D
+                }
+                p.d = obj["distance"].as<float>();
+
+                if (is2D)
+                {
+                    Serial.printf("Parsed point: x=%.2f, y=%.2f, d=%.2f\n", p.x, p.y, p.d);
+                    cords[i][0] = p.x;
+                    cords[i][1] = p.y;
+                    distances[i][0] = p.d;
+                }
+                else
+                {
+                    Serial.printf("Parsed point: x=%.2f, y=%.2f, z=%.2f, d=%.2f\n", p.x, p.y, p.z, p.d);
+                    cords[i][0] = p.x;
+                    cords[i][1] = p.y;
+                    cords[i][2] = p.z;
+                    distances[i][0] = p.d;
+                }
+            }
+
+            // Update the trilateration with the parsed data
+            trilat.update(cords, distances);
+            Serial.println("Points updated successfully.");
+            trilat.getState().print();
         }
         else if (input == "getState")
         {

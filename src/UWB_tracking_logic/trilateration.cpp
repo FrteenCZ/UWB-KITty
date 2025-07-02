@@ -19,9 +19,9 @@ trilateration::trilateration(int numOfDimensions)
 /**
  * @brief Update the trilateration algorithm with a new data point.
  *
- * @param point The new data point (x, y, z, d)
+ * @param point The data point containing coordinates and distance
  */
-void trilateration::update(const DataPoint &point)
+void trilateration::updateSinglePoint(const DataPoint &point)
 {
     // Store the data point in the buffer
     buffer[bufferIndex] = point;
@@ -51,6 +51,36 @@ void trilateration::update(const DataPoint &point)
         distances[i][0] = buffer[i].d;
     }
 
+    update(cords, distances);
+}
+
+/**
+ * @brief Update the trilateration algorithm with a set of anchor points and distances.
+ *
+ * @param cords The coordinates of the anchor points
+ * @param distances The distances to the target from each anchor point
+ */
+void trilateration::update(const Matrix &cords, const Matrix &distances)
+{
+    // Check if the number of dimensions matches the input
+    if (cords.cols() != numOfDimensions)
+    {
+        Serial.printf("Error: Expected %d dimensions, but got %d.\n", numOfDimensions, cords.cols());
+        return;
+    }
+    // Check if the number of distances matches the number of points
+    if (distances.rows() != cords.rows())
+    {
+        Serial.printf("Error: Number of distances (%d) does not match number of points (%d).\n", distances.rows(), cords.rows());
+        return;
+    }
+    // Check if we have enough points to compute the least squares solution
+    if (cords.rows() < (numOfDimensions + 1))
+    {
+        Serial.println("Not enough points to compute the least squares solution.");
+        return;
+    }
+
     // Check if the points are collinear (2D) or coplanar (3D)
     if (isCollinear(cords))
     {
@@ -64,8 +94,8 @@ void trilateration::update(const DataPoint &point)
 
     // Compute the centroid of the anchor points
     Matrix centroid = computeCentroid(cords);
-    Serial.println("Centroid:");
-    centroid.print();
+    // Serial.println("Centroid:");
+    // centroid.print();
 
     // Center the coordinates
     Matrix centeredCords(cords.matrix);
@@ -76,20 +106,20 @@ void trilateration::update(const DataPoint &point)
             centeredCords[i][j] -= centroid[0][j];
         }
     }
-    Serial.println("Centered Cords:");
-    centeredCords.print();
+    // Serial.println("Centered Cords:");
+    // centeredCords.print();
 
     // Compute the SVD of the centered coordinates
     std::tuple<Matrix, Matrix, Matrix> svdResult = svd(centeredCords);
     Matrix U = std::get<0>(svdResult);
     Matrix Sigma = std::get<1>(svdResult);
     Matrix V = std::get<2>(svdResult);
-    Serial.println("U:");
-    U.print();
-    Serial.println("Sigma:");
-    Sigma.print();
-    Serial.println("V:");
-    V.print();
+    // Serial.println("U:");
+    // U.print();
+    // Serial.println("Sigma:");
+    // Sigma.print();
+    // Serial.println("V:");
+    // V.print();
 
     // Compute the linear equations
     std::pair<Matrix, Matrix> equations = computeEquations(centeredCords, distances);
@@ -99,27 +129,27 @@ void trilateration::update(const DataPoint &point)
     {
         // Find the plane equation
         Plane plane = findPlane(V, centroid);
-        Serial.printf("Plane equation: %.2fx + %.2fy + %.2fz + %.2f = 0\n", plane.a, plane.b, plane.c, plane.d);
+        // Serial.printf("Plane equation: %.2fx + %.2fy + %.2fz + %.2f = 0\n", plane.a, plane.b, plane.c, plane.d);
 
         // Project the points onto the plane
         Matrix projectedPoints = projectPointsOntoPlane(centeredCords, plane);
-        Serial.println("Projected Points:");
-        projectedPoints.print();
+        // Serial.println("Projected Points:");
+        // projectedPoints.print();
 
         // Convert the 3D points to 2D coordinates
         Matrix planeU = V.getColumn(0).transpose();
         Matrix planeV = V.getColumn(1).transpose();
         planeU *= (1.0 / planeU.norm());
         planeV *= (1.0 / planeV.norm());
-        Serial.println("Vector U:");
-        planeU.print();
-        Serial.println("Vector V:");
-        planeV.print();
+        // Serial.println("Vector U:");
+        // planeU.print();
+        // Serial.println("Vector V:");
+        // planeV.print();
 
         // Convert the 3D points to 2D coordinates
         Matrix projected2D = convert3DTo2D(projectedPoints, planeU, planeV);
-        Serial.println("Projected 2D Points:");
-        projected2D.print();
+        // Serial.println("Projected 2D Points:");
+        // projected2D.print();
 
         // Compute the linear equations
         equations = computeEquations(projected2D, distances);
@@ -130,8 +160,8 @@ void trilateration::update(const DataPoint &point)
 
     // Solve the linear equations
     Matrix x = solveLeastSquares(A, b);
-    Serial.println("LS Solution:");
-    x.print();
+    // Serial.println("LS Solution:");
+    // x.print();
 
     // Convert the solution back to 3D coordinates, if necessary
     if (numOfDimensions == 3 && x.cols() == 2)
@@ -142,8 +172,8 @@ void trilateration::update(const DataPoint &point)
         planeU *= (1.0 / planeU.norm());
         planeV *= (1.0 / planeV.norm());
         x = reconstruct3D(lsSolution2D, planeU, planeV);
-        Serial.println("Reconstructed 3D Point:");
-        x.print();
+        // Serial.println("Reconstructed 3D Point:");
+        // x.print();
     }
     x = x + centroid; // Add the centroid to the solution
 

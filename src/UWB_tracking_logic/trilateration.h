@@ -10,8 +10,8 @@
 
 struct DataPoint
 {
-    float x, y, z;  // Coordinates of the anchor point
-    float d;        // Distance to the target
+    float x, y, z; // Coordinates of the anchor point
+    float d;       // Distance to the target
 };
 
 /**
@@ -21,15 +21,16 @@ class trilateration
 {
 public:
     trilateration(int numOfDimensions = 3);
-    void update(const DataPoint &point);
+    void updateSinglePoint(const DataPoint &point);
+    void update(const Matrix &cords, const Matrix &distances);
     Matrix getState() const;
     void printBuffer() const;
 
 private:
-    int numOfDimensions; // Number of dimensions (2D or 3D)
-    int bufferIndex = 0; // Points to the next insertion position
-    int count = 0;       // Number of data points in the buffer
-    KalmanFilter kf;     // Kalman filter object
+    int numOfDimensions;           // Number of dimensions (2D or 3D)
+    int bufferIndex = 0;           // Points to the next insertion position
+    int count = 0;                 // Number of data points in the buffer
+    KalmanFilter kf;               // Kalman filter object
     DataPoint buffer[BUFFER_SIZE]; // Circular buffer for storing data points
 };
 

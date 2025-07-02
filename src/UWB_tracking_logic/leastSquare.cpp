@@ -102,7 +102,7 @@ std::tuple<Matrix, Matrix, Matrix> svd(const Matrix &A)
         Matrix vk = V.getColumn(i); // Start with i-th column of V
         for (int iter = 0; iter < numIterations; ++iter)
         {
-            
+
             Matrix vk1 = AtA * vk; // AtA * vk
             float norm_vk1 = vk1.norm();
             if (norm_vk1 < 1e-6)
@@ -124,7 +124,6 @@ std::tuple<Matrix, Matrix, Matrix> svd(const Matrix &A)
         AtA = AtA - vk * vk.transpose() * singularValues[i] * singularValues[i];
     }
 
-    Serial.println("Eigen-decomposition complete.");
     // Sort singular values and corresponding vectors in descending order.
     std::vector<std::pair<float, Matrix>> sv_and_v;
     for (int i = 0; i < n; ++i)

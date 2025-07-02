@@ -1,6 +1,7 @@
 #ifndef SERIAL_CONTROL_H
 #define SERIAL_CONTROL_H
 #include <Arduino.h>
+#include <ArduinoJson.h>
 #include "config.h"
 #include "UWB_tracking_logic/trilateration.h"
 #include "wifi_connection/wifi_connection.h"
