@@ -180,8 +180,16 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
     Serial.println("Final Point:");
     x.print();
 
+    // Print the solution in JSON format
+    Serial.print("Trilateration Solution:");
+    x.printJSON();
+
     // Update the Kalman filter with the new solution
     kf.update(x);
+
+    // Print the current state of the Kalman filter
+    Serial.print("Kalman Filter State JSON:");
+    getState().transpose().printJSON();
 }
 
 /**
