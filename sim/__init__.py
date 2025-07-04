@@ -1,4 +1,5 @@
 from . import operators, ui_panel
+from .utils import ESPcom
 
 bl_info = {
     "name": "UWB-KITty",

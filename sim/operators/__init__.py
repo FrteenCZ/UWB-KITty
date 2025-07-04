@@ -1,8 +1,9 @@
-from . import draw_toggle, draw_distances_toggle
+from . import draw_toggle, draw_distances_toggle, comunication
 
 modules = [
     draw_toggle,
     draw_distances_toggle,
+    comunication,
 ]
 
 
