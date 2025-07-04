@@ -29,6 +29,7 @@ public:
     Matrix operator-(const Matrix &other) const;
 
     void print() const;
+    void printJSON() const;
 
     void set_value(float val);
     void set_identity(float scale = 1, int size = 0, int y = 0, int x = 0);

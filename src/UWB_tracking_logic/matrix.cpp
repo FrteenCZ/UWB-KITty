@@ -269,6 +269,32 @@ void Matrix::print() const
 }
 
 /**
+ * @brief Print the matrix in JSON format
+ */
+void Matrix::printJSON() const
+{
+    Serial.print("[");
+    for (size_t i = 0; i < rows(); ++i)
+    {
+        Serial.print("[");
+        for (size_t j = 0; j < cols(); ++j)
+        {
+            Serial.print(matrix[i][j]);
+            if (j < cols() - 1)
+            {
+                Serial.print(", ");
+            }
+        }
+        Serial.print("]");
+        if (i < rows() - 1)
+        {
+            Serial.print(", ");
+        }
+    }
+    Serial.println("]");
+}
+
+/**
  * @brief Set to value
  *
  * @param val The value to set
