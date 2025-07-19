@@ -4,14 +4,15 @@
 #include <vector>
 #include "matrix.h"
 
-struct Plane {
+struct Plane
+{
     float a, b, c, d; // Plane equation: ax + by + cz + d = 0
 };
 
 Matrix computeCentroid(const Matrix &cords);
 std::pair<Matrix, Matrix> computeEquations(const Matrix &cords, const Matrix &distances);
 
-std::tuple<Matrix, Matrix, Matrix> svd(const Matrix &A);
+Matrix covariance(const Matrix &A);
 bool isCoplanar(const Matrix Sigma, float threshold = 1e-5);
 bool isCollinear(const Matrix &Sigma, float threshold = 1e-5);
 Plane findPlane(const Matrix &V, const Matrix &Centroid);

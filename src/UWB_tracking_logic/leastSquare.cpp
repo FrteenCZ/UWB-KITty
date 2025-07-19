@@ -71,105 +71,44 @@ std::pair<Matrix, Matrix> computeEquations(const Matrix &cords, const Matrix &di
 }
 
 /**
- * @brief Compute Singular Value Decomposition (SVD) using Jacobi method.
+ * @brief Compute the covariance matrix of a given matrix A.
  *
  * @param A Input matrix (m x n)
- * @return std::tuple<Matrix, Matrix, Matrix> (U, Sigma, V^T)
+ * @return Matrix Covariance matrix (n x n)
  */
-std::tuple<Matrix, Matrix, Matrix> svd(const Matrix &A)
+Matrix covariance(const Matrix &A)
 {
     int m = A.rows();
     int n = A.cols();
 
-    // 1. Compute A^T * A
-    Matrix At = A.transpose();
-    Matrix AtA = At * A; // Use your Matrix multiplication
+    // Compute the mean of each column
+    Matrix mean(1, n);
+    for (int j = 0; j < n; ++j)
+    {
+        float sum = 0;
+        for (int i = 0; i < m; ++i)
+        {
+            sum += A[i][j];
+        }
+        mean[0][j] = sum / m;
+    }
 
-    // 2. Eigen-decomposition of A^T * A  (Using a power iteration-like method)
-    Matrix V(n, n);
-    Matrix Sigma(m, n); // Sigma is m x n
-    std::vector<float> singularValues(n);
-
-    // Initialize V to identity matrix
-    V.set_identity();
-
-    // Power iteration parameters
-    int numIterations = 100;
-    float tolerance = 1e-6f;
-
+    // Compute the covariance matrix
+    Matrix cov(n, n);
     for (int i = 0; i < n; ++i)
     {
-        Matrix vk = V.getColumn(i); // Start with i-th column of V
-        for (int iter = 0; iter < numIterations; ++iter)
+        for (int j = 0; j < n; ++j)
         {
-
-            Matrix vk1 = AtA * vk; // AtA * vk
-            float norm_vk1 = vk1.norm();
-            if (norm_vk1 < 1e-6)
+            float sum = 0;
+            for (int k = 0; k < m; ++k)
             {
-                // handle the zero vector.
-                break;
+                sum += (A[k][i] - mean[0][i]) * (A[k][j] - mean[0][j]);
             }
-            vk1 = vk1 * (1.0f / norm_vk1); // Normalize
-            if ((vk1 - vk).norm() < tolerance)
-                break;
-            vk = vk1;
+            cov[i][j] = sum / m;
         }
-        // Store the eigenvector as a column in V
-        V.setColumn(i, vk);
-        singularValues[i] = std::sqrt((vk.transpose() * AtA * vk)[0][0]); // calculate the singular value.
-        Sigma[i][i] = singularValues[i];
-
-        // Deflate AtA  (remove the contribution of the found eigenpair)
-        AtA = AtA - vk * vk.transpose() * singularValues[i] * singularValues[i];
     }
 
-    // Sort singular values and corresponding vectors in descending order.
-    std::vector<std::pair<float, Matrix>> sv_and_v;
-    for (int i = 0; i < n; ++i)
-    {
-        sv_and_v.push_back(std::make_pair(singularValues[i], V.getColumn(i)));
-    }
-    std::sort(sv_and_v.begin(), sv_and_v.end(), [](const std::pair<float, Matrix> &a, const std::pair<float, Matrix> &b)
-              { return a.first > b.first; });
-    // construct V and Sigma from the sorted pairs.
-    for (int i = 0; i < n; ++i)
-    {
-        singularValues[i] = sv_and_v[i].first;
-        V.setColumn(i, sv_and_v[i].second);
-        Sigma[i][i] = singularValues[i];
-    }
-    // 3. Compute U
-    Matrix U(m, m);
-    // Initialize U
-    Matrix AAt = A * At;
-    for (int i = 0; i < m; ++i)
-    {
-        U[i][i] = 1.0f;
-    }
-    for (int i = 0; i < n; ++i)
-    {
-        Matrix ui = (A * V.getColumn(i)) * (1.0f / singularValues[i]);
-        U.setColumn(i, ui);
-    }
-    if (m > n)
-    {
-        // Compute an orthonormal basis for the null space of A^T
-        Matrix nullspace_basis(m, m - n);
-        Matrix temp(m, m);
-        temp.set_identity();
-        for (int i = 0; i < m - n; ++i)
-        {
-            nullspace_basis.setColumn(i, temp.getColumn(n + i));
-        }
-        Matrix Q, R;
-        std::tie(Q, R) = nullspace_basis.qrDecomposition();
-        for (int i = 0; i < m - n; ++i)
-        {
-            U.setColumn(n + i, Q.getColumn(i));
-        }
-    }
-    return std::make_tuple(U, Sigma, V);
+    return cov;
 }
 
 /**

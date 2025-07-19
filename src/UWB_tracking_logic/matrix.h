@@ -33,13 +33,14 @@ public:
 
     void set_value(float val);
     void set_identity(float scale = 1, int size = 0, int y = 0, int x = 0);
-    
+
     float norm() const;
     Matrix transpose() const;
     Matrix gaussJordanInverse() const;
 
     std::pair<Matrix, Matrix> qrDecomposition() const;
     Matrix inverseQR() const;
+    std::pair<Matrix, Matrix> eigenJacobi(int maxIterations = 100, float tolerance = 1e-10) const;
 };
 
 #endif // MATRIX_H

@@ -593,3 +593,101 @@ Matrix Matrix::inverseQR() const
 
     return inverse;
 }
+
+/**
+ * @brief Compute the eigenvalues and eigenvectors of a symmetric matrix using the Jacobi method.
+ *
+ * @param maxIterations The maximum number of iterations.
+ * @param tolerance The tolerance for convergence.
+ *
+ * @return A pair containing:
+ * - First: A column vector (Nx1 matrix) of eigenvalues.
+ * - Second: An NxN matrix whose columns are the corresponding eigenvectors.
+ */
+std::pair<Matrix, Matrix> Matrix::eigenJacobi(int maxIterations, float tolerance) const
+{
+    if (rows() != cols())
+    {
+        Serial.println("Error eigenJacobi: Matrix must be square to compute eigenvalues and eigenvectors.");
+        return {Matrix(rows(), 1), Matrix(rows(), cols())};
+    }
+
+    int n = rows();
+    Matrix A = *this; // Make a copy of the matrix to diagonalize.
+    Matrix V(n, n);   // V will hold the eigenvectors.
+    V.set_identity(1.0, n, 0, 0);
+
+    for (int iter = 0; iter < maxIterations; ++iter)
+    {
+        // Find the largest off-diagonal element |A[p][q]|
+        float maxVal = 0.0;
+        int p = 0, q = 1; // Default initialization
+        for (int i = 0; i < n; ++i)
+        {
+            for (int j = i + 1; j < n; ++j)
+            {
+                if (std::abs(A[i][j]) > maxVal)
+                {
+                    maxVal = std::abs(A[i][j]);
+                    p = i;
+                    q = j;
+                }
+            }
+        }
+
+        // Check for convergence
+        if (maxVal < tolerance)
+        {
+            break;
+        }
+
+        // --- Cache the required values BEFORE modifying the matrix ---
+        float app = A[p][p];
+        float aqq = A[q][q];
+        float apq = A[p][q];
+
+        // Compute the Jacobi rotation parameters
+        float theta = 0.5 * std::atan2(2.0 * apq, aqq - app);
+        float c = std::cos(theta);
+        float s = std::sin(theta);
+
+        // --- Perform the rotation A' = J^T * A * J ---
+
+        // CORRECTED: Update the diagonal elements with the correct formulas
+        A[p][p] = c * c * app + s * s * aqq - 2.0 * c * s * apq;
+        A[q][q] = s * s * app + c * c * aqq + 2.0 * c * s * apq;
+
+        // Set the off-diagonal elements to zero
+        A[p][q] = A[q][p] = 0.0;
+
+        // Update the remaining elements in rows/columns p and q
+        for (int k = 0; k < n; ++k)
+        {
+            if (k != p && k != q)
+            {
+                float akp = A[k][p];
+                float akq = A[k][q];
+                A[k][p] = A[p][k] = c * akp - s * akq;
+                A[k][q] = A[q][k] = s * akp + c * akq;
+            }
+        }
+
+        // --- Update the eigenvector matrix V' = V * J ---
+        for (int k = 0; k < n; ++k)
+        {
+            float vkp = V[k][p];
+            float vkq = V[k][q];
+            V[k][p] = c * vkp - s * vkq;
+            V[k][q] = s * vkp + c * vkq;
+        }
+    }
+
+    // Extract eigenvalues from the diagonal of A
+    Matrix eigenvalues(n, 1);
+    for (int i = 0; i < n; ++i)
+    {
+        eigenvalues[i][0] = A[i][i];
+    }
+
+    return {eigenvalues, V};
+}
