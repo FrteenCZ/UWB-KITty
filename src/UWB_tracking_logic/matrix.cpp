@@ -682,11 +682,30 @@ std::pair<Matrix, Matrix> Matrix::eigenJacobi(int maxIterations, float tolerance
         }
     }
 
-    // Extract eigenvalues from the diagonal of A
-    Matrix eigenvalues(n, 1);
+    // --- Sort the eigenvalues and eigenvectors based on the absolute value of the eigenvalues ---
+    Matrix eigenvalues(n, 1); // Column vector for eigenvalues
+    std::vector<std::pair<double, Matrix>> pairs;
+
     for (int i = 0; i < n; ++i)
     {
-        eigenvalues[i][0] = A[i][i];
+        double val = A[i][i];
+        Matrix vec = V.getColumn(i);
+        pairs.emplace_back(val, vec);
+    }
+
+    std::sort(pairs.begin(), pairs.end(),
+              [](const std::pair<double, Matrix> &a, const std::pair<double, Matrix> &b)
+              {
+                  return std::abs(a.first) > std::abs(b.first);
+              });
+
+    for (int i = 0; i < n; ++i)
+    {
+        eigenvalues[i][0] = pairs[i].first;
+        for (int j = 0; j < n; ++j)
+        {
+            V[j][i] = pairs[i].second[j][0];
+        }
     }
 
     return {eigenvalues, V};
