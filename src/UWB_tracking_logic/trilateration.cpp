@@ -57,8 +57,8 @@ void trilateration::updateSinglePoint(const DataPoint &point)
 /**
  * @brief Update the trilateration algorithm with a set of anchor points and distances.
  *
- * @param cords The coordinates of the anchor points
- * @param distances The distances to the target from each anchor point
+ * @param cords The coordinates of the anchor points (numOfPoints x numOfDimensions)
+ * @param distances The distances to the target from each anchor point (numOfPoints x 1)
  */
 void trilateration::update(const Matrix &cords, const Matrix &distances)
 {
@@ -81,24 +81,20 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
         return;
     }
 
-    // Check if the points are collinear (2D) or coplanar (3D)
-    if (isCollinear(cords))
-    {
-        Serial.println("Warning: The points are collinear. Ignoring the update.");
-        return;
-    }
-    else if (numOfDimensions == 3 && isCoplanar(cords))
-    {
-        Serial.println("Warning: The points are coplanar. Assuming target is on the plane.");
-    }
-
     // Compute the centroid of the anchor points
-    Matrix centroid = computeCentroid(cords);
-    // Serial.println("Centroid:");
-    // centroid.print();
+    Matrix centroid(1, cords.cols()); // Centroid of the anchor points
+    for (int j = 0; j < cords.cols(); ++j)
+    {
+        float sum = 0;
+        for (int i = 0; i < cords.rows(); ++i)
+        {
+            sum += cords[i][j];
+        }
+        centroid[0][j] = sum / cords.rows();
+    }
 
     // Center the coordinates
-    Matrix centeredCords(cords.matrix);
+    Matrix centeredCords(cords.matrix); // Cords centered around the origin
     for (int i = 0; i < cords.rows(); ++i)
     {
         for (int j = 0; j < cords.cols(); ++j)
@@ -106,86 +102,91 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
             centeredCords[i][j] -= centroid[0][j];
         }
     }
-    // Serial.println("Centered Cords:");
-    // centeredCords.print();
 
-    // Compute the SVD of the centered coordinates
-    std::tuple<Matrix, Matrix, Matrix> svdResult = svd(centeredCords);
-    Matrix U = std::get<0>(svdResult);
-    Matrix Sigma = std::get<1>(svdResult);
-    Matrix V = std::get<2>(svdResult);
-    // Serial.println("U:");
-    // U.print();
-    // Serial.println("Sigma:");
-    // Sigma.print();
-    // Serial.println("V:");
-    // V.print();
+    // Compute the covariance matrix of the centered coordinates
+    Matrix cov = covariance(centeredCords); // Covariance matrix of the centered coordinates
 
+    // Compute the eigenvalues and eigenvectors of the covariance matrix
+    Matrix eigenvalues; // Eigenvalues of the covariance matrix
+    Matrix V;           // Eigenvectors of the covariance matrix
+    std::tie(eigenvalues, V) = cov.eigenJacobi();
+    Serial.println("Eigenvalues:");
+    eigenvalues.print();
+    Serial.println("Eigenvectors:");
+    V.print();
+
+    // Transform the coordinates to the eigenvector space
+    Matrix transformedCords = (V.transpose() * centeredCords.transpose()).transpose(); // Coordinates transformed to the eigenvector space
+    Serial.println("Transformed Coordinates:");
+    transformedCords.print();
+
+    // --- Dimensionality reduction ---
+    // Find how many dimensions to keep based on the eigenvalues
+    int dimensionsToKeep = 1;
+    for (int i = 0; i < eigenvalues.rows(); ++i)
+    {
+        float flatness = eigenvalues[i][0] / eigenvalues[0][0]; // Flatness ratio
+        Serial.printf("Flatness of dimension %d: %.6f\n", i, flatness);
+        if (flatness < 0.01) // Threshold for negligible flatness
+        {
+            break;
+        }
+        
+        dimensionsToKeep = i + 1; // Increment the count of dimensions to keep
+    }
+    Serial.printf("Dimensions to keep: %d/%d\n", dimensionsToKeep, eigenvalues.rows());
+
+    // Reduce the dimensionality of the transformed coordinates
+    Matrix reducedCords(transformedCords.rows(), dimensionsToKeep);
+    for (int i = 0; i < transformedCords.rows(); ++i)
+    {
+        for (int j = 0; j < dimensionsToKeep; ++j)
+        {
+            reducedCords[i][j] = transformedCords[i][j];
+        }
+    }
+    Serial.println("Reduced Coordinates:");
+    reducedCords.print();
+
+    // --- Trilateration ---
     // Compute the linear equations
-    std::pair<Matrix, Matrix> equations = computeEquations(centeredCords, distances);
+    std::pair<Matrix, Matrix> equations = computeEquations(reducedCords, distances);
+    Matrix A = equations.first;  // Coefficient matrix
+    Matrix b = equations.second; // Right-hand side vector
+    Serial.println("Coefficient Matrix A:");
+    A.print();
+    Serial.println("Right-hand Side Vector b:");
+    b.print();
 
-    // Handle coplanar points in 3D
-    if (numOfDimensions == 3 && isCoplanar(Sigma))
-    {
-        // Find the plane equation
-        Plane plane = findPlane(V, centroid);
-        // Serial.printf("Plane equation: %.2fx + %.2fy + %.2fz + %.2f = 0\n", plane.a, plane.b, plane.c, plane.d);
-
-        // Project the points onto the plane
-        Matrix projectedPoints = projectPointsOntoPlane(centeredCords, plane);
-        // Serial.println("Projected Points:");
-        // projectedPoints.print();
-
-        // Convert the 3D points to 2D coordinates
-        Matrix planeU = V.getColumn(0).transpose();
-        Matrix planeV = V.getColumn(1).transpose();
-        planeU *= (1.0 / planeU.norm());
-        planeV *= (1.0 / planeV.norm());
-        // Serial.println("Vector U:");
-        // planeU.print();
-        // Serial.println("Vector V:");
-        // planeV.print();
-
-        // Convert the 3D points to 2D coordinates
-        Matrix projected2D = convert3DTo2D(projectedPoints, planeU, planeV);
-        // Serial.println("Projected 2D Points:");
-        // projected2D.print();
-
-        // Compute the linear equations
-        equations = computeEquations(projected2D, distances);
-    }
-
-    Matrix A = equations.first;
-    Matrix b = equations.second;
-
-    // Solve the linear equations
-    Matrix x = solveLeastSquares(A, b);
-    // Serial.println("LS Solution:");
-    // x.print();
-
-    // Convert the solution back to 3D coordinates, if necessary
-    if (numOfDimensions == 3 && x.cols() == 2)
-    {
-        Matrix lsSolution2D = x;
-        Matrix planeU = V.getColumn(0).transpose();
-        Matrix planeV = V.getColumn(1).transpose();
-        planeU *= (1.0 / planeU.norm());
-        planeV *= (1.0 / planeV.norm());
-        x = reconstruct3D(lsSolution2D, planeU, planeV);
-        // Serial.println("Reconstructed 3D Point:");
-        // x.print();
-    }
-    x = x + centroid; // Add the centroid to the solution
-
-    Serial.println("Final Point:");
+    // Solve the linear equations using least squares
+    Matrix x = solveLeastSquares(A, b); // Least squares solution
+    Serial.println("Transformed Least Squares Solution x:");
     x.print();
+
+    // --- Transform back to original space ---
+    // Add the missing dimensions to the solution
+    Matrix lsSolution(x.rows(), numOfDimensions);
+    for (int i = 0; i < dimensionsToKeep; i++)
+    {
+        lsSolution[0][i] = x[0][i]; // Copy the solution for the reduced dimensions
+    }
+
+    // Transform the solution back to the original coordinate space
+    Matrix originalSolution = (V * lsSolution.transpose()).transpose(); // Transform back to the original space
+    Serial.println("Original Space Solution:");
+    originalSolution.print();
+
+    // Add the centroid to the solution
+    originalSolution = originalSolution + centroid; // Add the centroid to the solution
+    Serial.println("Final Point:");
+    originalSolution.print();
 
     // Print the solution in JSON format
     Serial.print("Trilateration Solution:");
-    x.printJSON();
+    originalSolution.printJSON();
 
     // Update the Kalman filter with the new solution
-    kf.update(x);
+    kf.update(originalSolution);
 
     // Print the current state of the Kalman filter
     Serial.print("Kalman Filter State JSON:");
