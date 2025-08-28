@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Display</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h2 id="name">Loading...</h2>
+        <p class="coords"><strong>Location:</strong> <span id="location">Loading...</span></p>
+        <button class="big-btn" onclick="fetchLocation()">Reload</button>
+    </div>
+    
+
+    <script>
+        function fetchLocation() {
+            fetch('/location/request')
+            .then(response => response.json())
+            .then(jsonData => {
+                document.getElementById("name").innerText = jsonData.name || "No Name";
+                document.getElementById("location").innerText = jsonData.location ? jsonData.location.join(", ") : "No Location";
+            })
+            .catch(error => {
+                console.error("Error fetching JSON:", error);
+                document.getElementById("name").innerText = "Error loading data";
+                document.getElementById("location").innerText = "Error loading data";
+            });
+        }
+        window.onload = fetchLocation;
+    </script>
+</body>
+</html>
