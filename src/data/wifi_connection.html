@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wi-Fi Scanner</title>
+
+    <title>WiFi List</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+    
+    <div class="container" style="width: 400px;">
+        <h1>Available WiFi Networks</h1>
+        <ul class="list" id="wifiList"></ul>
+    
+        <div class="modal-overlay" id="popup">
+            <div class="modal">
+                <button class="btn" style="float: right;" onclick="closePopup()">✖</button>
+                <h2>Enter WiFi Password</h2>
+                <p id="selectedSSID"></p>
+                <input type="password" id="wifiPassword" placeholder="Enter password...">
+                <button class="big-btn" onclick="sendWiFiCredentials()">Connect</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        const response = [{"ssid":"test1", "rssi":"-69", "encryption":"3"},{"ssid":"test2", "rssi":"-321321", "encryption":"0"}];
+        const wifiList = document.getElementById("wifiList");
+        let selectedSSID = "";
+
+        function getWiFiIcon(rssi) {
+    let color;
+    let bars;
+
+    if (rssi > -70) {
+        color = "green";
+        bars = 5;
+    } else if (rssi > -85) {
+        color = "yellow";
+        bars = 4;
+    } else if (rssi > -100) {
+        color = "orange";
+        bars = 3;
+    } else if (rssi > -110) {
+        color = "red";
+        bars = 2;
+    } else {
+        color = "darkred";
+        bars = 1;
+    }
+
+    return `
+        <svg width="24" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="vertical-align: bottom;">
+            <rect x="2" y="16" width="4" height="6" fill="${bars >= 1 ? color : 'gray'}"></rect>
+            <rect x="7" y="13" width="4" height="9" fill="${bars >= 2 ? color : 'gray'}"></rect>
+            <rect x="12" y="10" width="4" height="12" fill="${bars >= 3 ? color : 'gray'}"></rect>
+            <rect x="17" y="7" width="4" height="15" fill="${bars >= 4 ? color : 'gray'}"></rect>
+            <rect x="22" y="4" width="4" height="18" fill="${bars >= 5 ? color : 'gray'}"></rect>
+        </svg>
+    `;
+}
+
+    function renderWiFiList(wifiNetworks) {
+        wifiList.innerHTML = "";
+        wifiNetworks.forEach(network => {
+            let lockIcon = network.encryption == 0 ? "" : "🔒";
+            let listItem = document.createElement("li");
+            listItem.classList.add("list-item");
+            listItem.innerHTML = `
+                <span>${getWiFiIcon(network.rssi)} ${network.ssid} ${lockIcon}</span>
+                <button class="btn" style="float: right;"" onclick="openPopup('${network.ssid}', ${network.encryption})">Connect</button>
+            `;
+            wifiList.appendChild(listItem);
+        });
+    }
+        function openPopup(ssid, encryption) {
+            selectedSSID = ssid;
+            document.getElementById("selectedSSID").innerText = `SSID: ${ssid}`;
+            document.getElementById("popup").style.display = "flex";
+            document.getElementById("wifiPassword").hidden = (encryption == 0);
+        }
+
+        function closePopup() {
+            document.getElementById("popup").style.display = "none";
+        }
+
+        function sendWiFiCredentials() {
+            const password = document.getElementById("wifiPassword");
+            if (!password.value && !password.hidden) {
+                alert("Please enter a password!");
+                return;
+            }
+            
+            fetch(`wifi/connect?ssid=${encodeURIComponent(selectedSSID)}&password=${encodeURIComponent(password.value)}`)
+                .then(response => response.text())
+                .then(data => {
+                    alert("Response from ESP32: " + data);
+                    closePopup();
+                })
+                .catch(error => {
+                    alert("Error connecting to WiFi");
+                });
+        }
+
+        function fetchWiFiNetworks() {
+            fetch('/wifi/scan')
+                .then(response => response.json())
+                .then(data => {
+                    renderWiFiList(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching WiFi networks:', error);
+                });
+        }
+        // window.onload = renderWiFiList(response);
+        window.onload = fetchWiFiNetworks;
+    </script>
+</body>
+</html>
