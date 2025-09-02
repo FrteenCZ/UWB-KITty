@@ -89,7 +89,6 @@ void handleSerialInput()
         }
         else if (input.startsWith("points"))
         {
-            // Allocate a static JSON document (size depends on JSON size)
             JsonDocument doc;
 
             DeserializationError error = deserializeJson(doc, input.substring(7));
@@ -140,14 +139,12 @@ void handleSerialInput()
 
                 if (is2D)
                 {
-                    Serial.printf("Parsed point: x=%.2f, y=%.2f, d=%.2f\n", p.x, p.y, p.d);
                     cords[i][0] = p.x;
                     cords[i][1] = p.y;
                     distances[i][0] = p.d;
                 }
                 else
                 {
-                    Serial.printf("Parsed point: x=%.2f, y=%.2f, z=%.2f, d=%.2f\n", p.x, p.y, p.z, p.d);
                     cords[i][0] = p.x;
                     cords[i][1] = p.y;
                     cords[i][2] = p.z;

@@ -62,27 +62,21 @@ void trilateration::updateSinglePoint(const DataPoint &point)
  */
 void trilateration::update(const Matrix &cords, const Matrix &distances)
 {
-    // Check if the number of dimensions matches the input
+    // --- 0. Input Validation ---
     if (cords.cols() != numOfDimensions)
     {
         Serial.printf("Error: Expected %d dimensions, but got %d.\n", numOfDimensions, cords.cols());
         return;
     }
-    // Check if the number of distances matches the number of points
     if (distances.rows() != cords.rows())
     {
         Serial.printf("Error: Number of distances (%d) does not match number of points (%d).\n", distances.rows(), cords.rows());
         return;
     }
-    // Check if we have enough points to compute the least squares solution
-    if (cords.rows() < (numOfDimensions + 1))
-    {
-        Serial.println("Not enough points to compute the least squares solution.");
-        return;
-    }
 
+    // --- 1. Analyze Full 3D Geometry via PCA (No changes here) ---
     // Compute the centroid of the anchor points
-    Matrix centroid(1, cords.cols()); // Centroid of the anchor points
+    Matrix centroid(1, cords.cols());
     for (int j = 0; j < cords.cols(); ++j)
     {
         float sum = 0;
@@ -94,7 +88,7 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
     }
 
     // Center the coordinates
-    Matrix centeredCords(cords.matrix); // Cords centered around the origin
+    Matrix centeredCords(cords.matrix);
     for (int i = 0; i < cords.rows(); ++i)
     {
         for (int j = 0; j < cords.cols(); ++j)
@@ -104,23 +98,23 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
     }
 
     // Compute the covariance matrix of the centered coordinates
-    Matrix cov = covariance(centeredCords); // Covariance matrix of the centered coordinates
+    Matrix cov = covariance(centeredCords);
 
     // Compute the eigenvalues and eigenvectors of the covariance matrix
-    Matrix eigenvalues; // Eigenvalues of the covariance matrix
-    Matrix V;           // Eigenvectors of the covariance matrix
-    std::tie(eigenvalues, V) = cov.eigenJacobi();
+    Matrix eigenvalues;
+    Matrix eigenvectors;
+    std::tie(eigenvalues, eigenvectors) = cov.eigenJacobi();
     Serial.println("Eigenvalues:");
     eigenvalues.print();
-    Serial.println("Eigenvectors:");
-    V.print();
+    Serial.print("Eigenvectors (E):");
+    eigenvectors.printJSON();
 
-    // Transform the coordinates to the eigenvector space
-    Matrix transformedCords = (V.transpose() * centeredCords.transpose()).transpose(); // Coordinates transformed to the eigenvector space
+    // --- 2. Transform the coordinates into the Eigenvector Basis ---
+    Matrix transformedCords = (eigenvectors.transpose() * centeredCords.transpose()).transpose();
     Serial.println("Transformed Coordinates:");
     transformedCords.print();
 
-    // --- Dimensionality reduction ---
+    // --- 3. Dimensionality reduction ---
     // Find how many dimensions to keep based on the eigenvalues
     int dimensionsToKeep = 1;
     for (int i = 0; i < eigenvalues.rows(); ++i)
@@ -131,8 +125,8 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
         {
             break;
         }
-        
-        dimensionsToKeep = i + 1; // Increment the count of dimensions to keep
+
+        dimensionsToKeep = i + 1;
     }
     Serial.printf("Dimensions to keep: %d/%d\n", dimensionsToKeep, eigenvalues.rows());
 
@@ -148,7 +142,7 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
     Serial.println("Reduced Coordinates:");
     reducedCords.print();
 
-    // --- Trilateration ---
+    // --- 4. Trilateration ---
     // Compute the linear equations
     std::pair<Matrix, Matrix> equations = computeEquations(reducedCords, distances);
     Matrix A = equations.first;  // Coefficient matrix
@@ -163,32 +157,39 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
     Serial.println("Transformed Least Squares Solution x:");
     x.print();
 
-    // --- Transform back to original space ---
+    // --- 5. Transform back to original space ---
     // Add the missing dimensions to the solution
     Matrix lsSolution(x.rows(), numOfDimensions);
     for (int i = 0; i < dimensionsToKeep; i++)
     {
-        lsSolution[0][i] = x[0][i]; // Copy the solution for the reduced dimensions
+        lsSolution[0][i] = x[0][i];
     }
 
     // Transform the solution back to the original coordinate space
-    Matrix originalSolution = (V * lsSolution.transpose()).transpose(); // Transform back to the original space
+    Matrix originalSolution = (eigenvectors * lsSolution.transpose()).transpose();
     Serial.println("Original Space Solution:");
     originalSolution.print();
 
     // Add the centroid to the solution
-    originalSolution = originalSolution + centroid; // Add the centroid to the solution
+    originalSolution = originalSolution + centroid;
     Serial.println("Final Point:");
     originalSolution.print();
 
-    // Print the solution in JSON format
-    Serial.print("Trilateration Solution:");
+    // --- 6. Find alpha to get the real solution inside of the null space ---
+    float alpha = 0.0f;
+    for (int i = 0; i < cords.rows(); ++i)
+    {
+        float distance = (originalSolution - Matrix({cords[i]})).norm();
+        alpha += sqrt(distances[i][0] * distances[i][0] -
+                      distance * distance);
+    }
+    alpha /= cords.rows();
+    Serial.printf("Alpha: %.6f\n", alpha);
+
+    // --- 8. Update State ---
+    Serial.print("Trilateration Solution JSON:");
     originalSolution.printJSON();
-
-    // Update the Kalman filter with the new solution
     kf.update(originalSolution);
-
-    // Print the current state of the Kalman filter
     Serial.print("Kalman Filter State JSON:");
     getState().transpose().printJSON();
 }
