@@ -269,29 +269,31 @@ void Matrix::print() const
 }
 
 /**
- * @brief Print the matrix in JSON format
+ * @brief Convert the matrix to a string representation
  */
-void Matrix::printJSON() const
+String Matrix::toString() const
 {
-    Serial.print("[");
+    String output = "[";
     for (size_t i = 0; i < rows(); ++i)
     {
-        Serial.print("[");
+        output += "[";
         for (size_t j = 0; j < cols(); ++j)
         {
-            Serial.print(matrix[i][j]);
+            output += String(matrix[i][j], 6);
             if (j < cols() - 1)
             {
-                Serial.print(", ");
+                output += ", ";
             }
         }
-        Serial.print("]");
+        output += "]";
         if (i < rows() - 1)
         {
-            Serial.print(", ");
+            output += ", ";
         }
     }
-    Serial.println("]");
+    output += "]";
+
+    return output;
 }
 
 /**

@@ -104,31 +104,34 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
     Matrix eigenvalues;
     Matrix eigenvectors;
     std::tie(eigenvalues, eigenvectors) = cov.eigenJacobi();
-    Serial.println("Eigenvalues:");
-    eigenvalues.print();
-    Serial.print("Eigenvectors (E):");
-    eigenvectors.printJSON();
+    // Serial.println("Eigenvalues:");
+    // eigenvalues.print();
+    // Serial.print("Eigenvectors (E):");
+    // eigenvectors.print();
 
     // --- 2. Transform the coordinates into the Eigenvector Basis ---
     Matrix transformedCords = (eigenvectors.transpose() * centeredCords.transpose()).transpose();
-    Serial.println("Transformed Coordinates:");
-    transformedCords.print();
+    // Serial.println("Transformed Coordinates:");
+    // transformedCords.print();
 
     // --- 3. Dimensionality reduction ---
     // Find how many dimensions to keep based on the eigenvalues
-    int dimensionsToKeep = 1;
-    for (int i = 0; i < eigenvalues.rows(); ++i)
+    int dimensionsToKeep = 0;
+    if (eigenvalues[0][0] != 0)
     {
-        float flatness = eigenvalues[i][0] / eigenvalues[0][0]; // Flatness ratio
-        Serial.printf("Flatness of dimension %d: %.6f\n", i, flatness);
-        if (flatness < 0.01) // Threshold for negligible flatness
+        for (int i = 0; i < eigenvalues.rows(); ++i)
         {
-            break;
-        }
+            float flatness = eigenvalues[i][0] / eigenvalues[0][0]; // Flatness ratio
+            // Serial.printf("Flatness of dimension %d: %.6f\n", i, flatness);
+            if (flatness < 0.01) // Threshold for negligible flatness
+            {
+                break;
+            }
 
-        dimensionsToKeep = i + 1;
+            dimensionsToKeep = i + 1;
+        }
     }
-    Serial.printf("Dimensions to keep: %d/%d\n", dimensionsToKeep, eigenvalues.rows());
+    // Serial.printf("Dimensions to keep: %d/%d\n", dimensionsToKeep, eigenvalues.rows());
 
     // Reduce the dimensionality of the transformed coordinates
     Matrix reducedCords(transformedCords.rows(), dimensionsToKeep);
@@ -139,23 +142,23 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
             reducedCords[i][j] = transformedCords[i][j];
         }
     }
-    Serial.println("Reduced Coordinates:");
-    reducedCords.print();
+    // Serial.println("Reduced Coordinates:");
+    // reducedCords.print();
 
     // --- 4. Trilateration ---
     // Compute the linear equations
     std::pair<Matrix, Matrix> equations = computeEquations(reducedCords, distances);
     Matrix A = equations.first;  // Coefficient matrix
     Matrix b = equations.second; // Right-hand side vector
-    Serial.println("Coefficient Matrix A:");
-    A.print();
-    Serial.println("Right-hand Side Vector b:");
-    b.print();
+    // Serial.println("Coefficient Matrix A:");
+    // A.print();
+    // Serial.println("Right-hand Side Vector b:");
+    // b.print();
 
     // Solve the linear equations using least squares
     Matrix x = solveLeastSquares(A, b); // Least squares solution
-    Serial.println("Transformed Least Squares Solution x:");
-    x.print();
+    // Serial.println("Transformed Least Squares Solution x:");
+    // x.print();
 
     // --- 5. Transform back to original space ---
     // Add the missing dimensions to the solution
@@ -167,13 +170,13 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
 
     // Transform the solution back to the original coordinate space
     Matrix originalSolution = (eigenvectors * lsSolution.transpose()).transpose();
-    Serial.println("Original Space Solution:");
-    originalSolution.print();
+    // Serial.println("Original Space Solution:");
+    // originalSolution.print();
 
     // Add the centroid to the solution
     originalSolution = originalSolution + centroid;
-    Serial.println("Final Point:");
-    originalSolution.print();
+    // Serial.println("Final Point:");
+    // originalSolution.print();
 
     // --- 6. Find alpha to get the real solution inside of the null space ---
     float alpha = 0.0f;
@@ -184,14 +187,35 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
                       distance * distance);
     }
     alpha /= cords.rows();
-    Serial.printf("Alpha: %.6f\n", alpha);
+    // Serial.printf("Alpha: %.6f\n", alpha);
 
-    // --- 8. Update State ---
-    Serial.print("Trilateration Solution JSON:");
-    originalSolution.printJSON();
+    // --- 8. Update Kalman Filter State ---
+    // Serial.print("Trilateration Solution JSON:");
+    // originalSolution.print();
     kf.update(originalSolution);
-    Serial.print("Kalman Filter State JSON:");
-    getState().transpose().printJSON();
+    // Serial.print("Kalman Filter State JSON:");
+    // getState().transpose().print();
+
+    // --- 9. Send Data to Serial ---
+    Matrix null_space = Matrix(numOfDimensions, numOfDimensions - dimensionsToKeep);
+    for (int i = 0; i < numOfDimensions; ++i)
+    {
+        for (int j = 0; j < numOfDimensions - dimensionsToKeep; ++j)
+        {
+            null_space[i][j] = eigenvectors[i][numOfDimensions - 1 - j];
+        }
+    }
+
+    Serial.printf(
+        "data: "
+        "{\"null_space\": %s, "
+        "\"alpha\": %.6f, "
+        "\"trilateration\": %s, "
+        "\"kalman\": %s}\n",
+        null_space.transpose().toString().c_str(),
+        alpha,
+        originalSolution.toString().c_str(),
+        getState().transpose().toString().c_str());
 }
 
 /**
