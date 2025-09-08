@@ -180,13 +180,16 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
 
     // --- 6. Find alpha to get the real solution inside of the null space ---
     float alpha = 0.0f;
-    for (int i = 0; i < cords.rows(); ++i)
+    if (numOfDimensions - dimensionsToKeep != 0)
     {
-        float distance = (originalSolution - Matrix({cords[i]})).norm();
-        alpha += sqrt(distances[i][0] * distances[i][0] -
-                      distance * distance);
+        for (int i = 0; i < cords.rows(); ++i)
+        {
+            float distance = (originalSolution - Matrix({cords[i]})).norm();
+            alpha += sqrt(distances[i][0] * distances[i][0] -
+                          distance * distance);
+        }
+        alpha /= cords.rows();
     }
-    alpha /= cords.rows();
     // Serial.printf("Alpha: %.6f\n", alpha);
 
     // --- 8. Update Kalman Filter State ---
