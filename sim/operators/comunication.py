@@ -1,5 +1,6 @@
 import bpy  # type: ignore
 import numpy as np
+import os
 from ..utils.ESPcom import SerialThread
 
 
@@ -195,7 +196,14 @@ class SERIAL_OT_ModalESP(bpy.types.Operator):
         return {'PASS_THROUGH'}
 
     def execute(self, context):
-        self._thread = SerialThread(port='/dev/ttyUSB0', baudrate=115200)
+        devices = [
+            f"/dev/{d}" for d in os.listdir("/dev") if d.startswith("ttyUSB")]
+
+        if not devices:
+            self.report({'ERROR'}, "No serial devices found (no /dev/ttyUSB*)")
+            return {'CANCELLED'}
+
+        self._thread = SerialThread(port=devices[0], baudrate=115200)
         self._thread.start()
 
         wm = context.window_manager
