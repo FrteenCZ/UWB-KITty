@@ -1,6 +1,5 @@
 import bpy  # type: ignore
 import numpy as np
-import serial.tools.list_ports
 from ..utils.ESPcom import SerialThread
 
 
@@ -196,13 +195,12 @@ class SERIAL_OT_ModalESP(bpy.types.Operator):
         return {'PASS_THROUGH'}
 
     def execute(self, context):
-        ports = serial.tools.list_ports.comports()
-
-        if not ports:
-            self.report({'ERROR'}, "No serial devices found")
+        port = context.scene.serial_props.port
+        if port == "NONE":
+            self.report({'ERROR'}, "No serial devices available")
             return {'CANCELLED'}
 
-        self._thread = SerialThread(port=ports[0].device, baudrate=115200)
+        self._thread = SerialThread(port=port, baudrate=115200)
         self._thread.start()
 
         wm = context.window_manager

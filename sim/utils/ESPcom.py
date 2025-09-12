@@ -63,7 +63,7 @@ class SerialThread(threading.Thread):
                 self.trilateration_cords = data.get("trilateration", None)
                 self.kalman_cords = data.get("kalman", None)
 
-                print(f"Parsed data: {data}")
+                # print(f"Parsed data: {data}")
             except json.JSONDecodeError as e:
                 print(f"Error decoding JSON data: {e}")
 

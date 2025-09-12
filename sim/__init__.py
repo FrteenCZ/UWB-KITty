@@ -1,15 +1,15 @@
-from . import operators, ui_panel
-from .utils import ESPcom
+from . import operators, ui
+# from .utils import ESPcom
 
 bl_info = {
     "name": "UWB-KITty",
     "blender": (4, 0, 0),
-    "category": "3D View",
+    "category": "Development",
 }
 
 modules = [
     operators,
-    ui_panel,
+    ui,
 ]
 
 
