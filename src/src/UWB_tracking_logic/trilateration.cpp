@@ -6,7 +6,10 @@
  * @param numOfDimensions The number of dimensions (2D or 3D)
  */
 trilateration::trilateration(int numOfDimensions)
-    : numOfDimensions(numOfDimensions)
+    : numOfDimensions(numOfDimensions),
+      null_space(Matrix(0, 0)),
+      trilatSolution(Matrix(1, numOfDimensions)),
+      alpha(0.0f)
 {
     // Initialize the Kalman filter with the specified number of dimensions
     kf = KalmanFilter(numOfDimensions);
@@ -73,6 +76,24 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
         Serial.printf("Error: Number of distances (%d) does not match number of points (%d).\n", distances.rows(), cords.rows());
         return;
     }
+    if (cords.rows() == 0)
+    {
+        Serial.printf("Error: There are no points");
+        return;
+    }
+
+    if (cords.rows() == 1)
+    {
+        null_space = Matrix(numOfDimensions, numOfDimensions);
+        for (int i = 0; i < numOfDimensions; i++)
+        {
+            null_space[i][i] = 1;
+        }
+        trilatSolution = cords;
+        alpha = distances[0][0];
+        kf.update(trilatSolution);
+        return;
+    }
 
     // --- 1. Analyze Full 3D Geometry via PCA (No changes here) ---
     // Compute the centroid of the anchor points
@@ -133,74 +154,80 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
     }
     // Serial.printf("Dimensions to keep: %d/%d\n", dimensionsToKeep, eigenvalues.rows());
 
-    // Reduce the dimensionality of the transformed coordinates
-    Matrix reducedCords(transformedCords.rows(), dimensionsToKeep);
-    for (int i = 0; i < transformedCords.rows(); ++i)
+    if (dimensionsToKeep != 0)
     {
-        for (int j = 0; j < dimensionsToKeep; ++j)
+
+        // Reduce the dimensionality of the transformed coordinates
+        Matrix reducedCords(transformedCords.rows(), dimensionsToKeep);
+        for (int i = 0; i < transformedCords.rows(); ++i)
         {
-            reducedCords[i][j] = transformedCords[i][j];
+            for (int j = 0; j < dimensionsToKeep; ++j)
+            {
+                reducedCords[i][j] = transformedCords[i][j];
+            }
         }
-    }
-    // Serial.println("Reduced Coordinates:");
-    // reducedCords.print();
+        // Serial.println("Reduced Coordinates:");
+        // reducedCords.print();
 
-    // --- 4. Trilateration ---
-    // Compute the linear equations
-    std::pair<Matrix, Matrix> equations = computeEquations(reducedCords, distances);
-    Matrix A = equations.first;  // Coefficient matrix
-    Matrix b = equations.second; // Right-hand side vector
-    // Serial.println("Coefficient Matrix A:");
-    // A.print();
-    // Serial.println("Right-hand Side Vector b:");
-    // b.print();
+        // --- 4. Trilateration ---
+        // Compute the linear equations
+        std::pair<Matrix, Matrix> equations = computeEquations(reducedCords, distances);
+        Matrix A = equations.first;  // Coefficient matrix
+        Matrix b = equations.second; // Right-hand side vector
+        // Serial.println("Coefficient Matrix A:");
+        // A.print();
+        // Serial.println("Right-hand Side Vector b:");
+        // b.print();
 
-    // Solve the linear equations using least squares
-    Matrix x = solveLeastSquares(A, b); // Least squares solution
-    // Serial.println("Transformed Least Squares Solution x:");
-    // x.print();
+        // Solve the linear equations using least squares
+        Matrix x = solveLeastSquares(A, b); // Least squares solution
+        // Serial.println("Transformed Least Squares Solution x:");
+        // x.print();
 
-    // --- 5. Transform back to original space ---
-    // Add the missing dimensions to the solution
-    Matrix lsSolution(x.rows(), numOfDimensions);
-    for (int i = 0; i < dimensionsToKeep; i++)
-    {
-        lsSolution[0][i] = x[0][i];
-    }
-
-    // Transform the solution back to the original coordinate space
-    Matrix originalSolution = (eigenvectors * lsSolution.transpose()).transpose();
-    // Serial.println("Original Space Solution:");
-    // originalSolution.print();
-
-    // Add the centroid to the solution
-    originalSolution = originalSolution + centroid;
-    // Serial.println("Final Point:");
-    // originalSolution.print();
-
-    // --- 6. Find alpha to get the real solution inside of the null space ---
-    float alpha = 0.0f;
-    if (numOfDimensions - dimensionsToKeep != 0)
-    {
-        for (int i = 0; i < cords.rows(); ++i)
+        // --- 5. Transform back to original space ---
+        // Add the missing dimensions to the solution
+        Matrix lsSolution(x.rows(), numOfDimensions);
+        for (int i = 0; i < dimensionsToKeep; i++)
         {
-            float distance = (originalSolution - Matrix({cords[i]})).norm();
-            alpha += sqrt(distances[i][0] * distances[i][0] -
-                          distance * distance);
+            lsSolution[0][i] = x[0][i];
+        }
+
+        // Transform the solution back to the original coordinate space
+        trilatSolution = (eigenvectors * lsSolution.transpose()).transpose();
+        // Serial.println("Original Space Solution:");
+        // trilatSolution.print();
+
+        // Add the centroid to the solution
+        trilatSolution = trilatSolution + centroid;
+        // Serial.println("Final Point:");
+        // trilatSolution.print();
+
+        // --- 6. Find alpha to get the real solution inside of the null space ---
+        alpha = 0.0f;
+        if (numOfDimensions - dimensionsToKeep != 0)
+        {
+            for (int i = 0; i < cords.rows(); ++i)
+            {
+                float distance = (trilatSolution - Matrix({cords[i]})).norm();
+                alpha += sqrt(distances[i][0] * distances[i][0] -
+                              distance * distance);
+            }
+            alpha /= cords.rows();
+        }
+        // Serial.printf("Alpha: %.6f\n", alpha);
+    }
+    else
+    {
+        trilatSolution = centroid;
+        for (int i = 0; i < cords.rows(); i++)
+        {
+            alpha += distances[i][0];
         }
         alpha /= cords.rows();
     }
-    // Serial.printf("Alpha: %.6f\n", alpha);
 
-    // --- 8. Update Kalman Filter State ---
-    // Serial.print("Trilateration Solution JSON:");
-    // originalSolution.print();
-    kf.update(originalSolution);
-    // Serial.print("Kalman Filter State JSON:");
-    // getState().transpose().print();
-
-    // --- 9. Send Data to Serial ---
-    Matrix null_space = Matrix(numOfDimensions, numOfDimensions - dimensionsToKeep);
+    // --- 8. Gather the null space ---
+    null_space = Matrix(numOfDimensions, numOfDimensions - dimensionsToKeep);
     for (int i = 0; i < numOfDimensions; ++i)
     {
         for (int j = 0; j < numOfDimensions - dimensionsToKeep; ++j)
@@ -209,16 +236,13 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
         }
     }
 
-    Serial.printf(
-        "data: "
-        "{\"null_space\": %s, "
-        "\"alpha\": %.6f, "
-        "\"trilateration\": %s, "
-        "\"kalman\": %s}\n",
-        null_space.transpose().toString().c_str(),
-        alpha,
-        originalSolution.toString().c_str(),
-        getState().transpose().toString().c_str());
+    // --- 9. Update Kalman Filter State ---
+    // Serial.print("Trilateration Solution JSON:");
+    // trilatSolution.print();
+    kf.update(trilatSolution);
+    // Serial.print("Kalman Filter State JSON:");
+    // getState().transpose().print();
+
 }
 
 /**

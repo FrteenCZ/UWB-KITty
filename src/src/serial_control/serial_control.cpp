@@ -154,8 +154,17 @@ void handleSerialInput()
 
             // Update the trilateration with the parsed data
             trilat.update(cords, distances);
-            Serial.println("Points updated successfully.");
-            trilat.getState().print();
+            
+            Serial.printf(
+                "data: "
+                "{\"null_space\": %s, "
+                "\"alpha\": %.6f, "
+                "\"trilateration\": %s, "
+                "\"kalman\": %s}\n",
+                trilat.null_space.transpose().toString().c_str(),
+                trilat.alpha,
+                trilat.trilatSolution.toString().c_str(),
+                trilat.getState().transpose().toString().c_str());
         }
         else if (input == "getState")
         {

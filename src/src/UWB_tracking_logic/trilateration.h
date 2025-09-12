@@ -26,6 +26,12 @@ public:
     Matrix getState() const;
     void printBuffer() const;
 
+    Matrix null_space;
+    Matrix trilatSolution;
+    float alpha;
+
+    Matrix kalmanState;
+
 private:
     int numOfDimensions;           // Number of dimensions (2D or 3D)
     int bufferIndex = 0;           // Points to the next insertion position
