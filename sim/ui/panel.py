@@ -58,8 +58,10 @@ class VIEW3D_PT_comunication_panel(bpy.types.Panel):
         props = context.scene.serial_props
 
         layout.prop(props, "port")
-        layout.operator("wm.serial_modal_esp", text="Start ESP")
-
+        if SERIAL_OT_ModalESP.running:
+            layout.operator("wm.serial_stop_esp", text="Stop", icon="CANCEL")
+        else:
+            layout.operator("wm.serial_modal_esp", text="Connect", icon="PLAY")
 
 def register():
     bpy.utils.register_class(VIEW3D_PT_tracking_panel)

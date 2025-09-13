@@ -180,6 +180,8 @@ class SERIAL_OT_ModalESP(bpy.types.Operator):
 
     _timer = None
     _thread = None
+    running = False
+    instance = None
 
     def modal(self, context, event):
         if event.type == 'TIMER':
@@ -206,6 +208,9 @@ class SERIAL_OT_ModalESP(bpy.types.Operator):
         wm = context.window_manager
         self._timer = wm.event_timer_add(0.5, window=context.window)
         wm.modal_handler_add(self)
+
+        SERIAL_OT_ModalESP.running = True
+        SERIAL_OT_ModalESP.instance = self
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
@@ -214,18 +219,31 @@ class SERIAL_OT_ModalESP(bpy.types.Operator):
             self._thread.join()
         wm = context.window_manager
         wm.event_timer_remove(self._timer)
+        SERIAL_OT_ModalESP.running = False
+        SERIAL_OT_ModalESP.instance = None
         print("Modal operator stopped.")
+        return {'CANCELLED'}
 
 
-def menu_func(self, context):
-    self.layout.operator(SERIAL_OT_ModalESP.bl_idname)
+class SERIAL_OT_StopESP(bpy.types.Operator):
+    bl_idname = "wm.serial_stop_esp"
+    bl_label = "Stop ESP Serial"
+
+    def execute(self, context):
+        inst = SERIAL_OT_ModalESP.instance
+        if inst:
+            inst.cancel(context)   # call cancel on the running instance
+            return {'FINISHED'}
+        else:
+            self.report({'WARNING'}, "ESP Serial is not running")
+            return {'CANCELLED'}
 
 
 def register():
     bpy.utils.register_class(SERIAL_OT_ModalESP)
-    bpy.types.TOPBAR_MT_file.append(menu_func)
+    bpy.utils.register_class(SERIAL_OT_StopESP)
 
 
 def unregister():
     bpy.utils.unregister_class(SERIAL_OT_ModalESP)
-    bpy.types.TOPBAR_MT_file.remove(menu_func)
+    bpy.utils.unregister_class(SERIAL_OT_StopESP)
