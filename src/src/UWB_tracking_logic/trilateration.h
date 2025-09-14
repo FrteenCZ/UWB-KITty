@@ -3,7 +3,6 @@
 
 #include <Arduino.h>
 #include "matrix.h"
-#include "leastSquare.h"
 #include "KalmanFilter.h"
 
 #define BUFFER_SIZE 10 // Number of stored data points

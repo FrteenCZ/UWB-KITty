@@ -95,7 +95,7 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
         return;
     }
 
-    // --- 1. Analyze Full 3D Geometry via PCA (No changes here) ---
+    // --- 1. Analyze Full 3D Geometry via PCA ---
     // Compute the centroid of the anchor points
     Matrix centroid(1, cords.cols());
     for (int j = 0; j < cords.cols(); ++j)

@@ -42,5 +42,8 @@ public:
     Matrix inverseQR() const;
     std::pair<Matrix, Matrix> eigenJacobi(int maxIterations = 100, float tolerance = 1e-10) const;
 };
+std::pair<Matrix, Matrix> computeEquations(const Matrix &cords, const Matrix &distances);
+Matrix covariance(const Matrix &A);
+Matrix solveLeastSquares(const Matrix &A, const Matrix &b);
 
 #endif // MATRIX_H
