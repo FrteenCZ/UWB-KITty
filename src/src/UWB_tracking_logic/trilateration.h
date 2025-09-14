@@ -36,6 +36,7 @@ private:
     int bufferIndex = 0;           // Points to the next insertion position
     int count = 0;                 // Number of data points in the buffer
     KalmanFilter kf;               // Kalman filter object
+    unsigned long last_update_time_ms_;
     DataPoint buffer[BUFFER_SIZE]; // Circular buffer for storing data points
 };
 

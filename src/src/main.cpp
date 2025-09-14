@@ -7,6 +7,8 @@ void setup()
 {
     Serial.begin(115200);
 
+    pinMode(onboardledPin, OUTPUT);
+
     onboardledState = "on";
     digitalWrite(onboardledPin, HIGH);
 }

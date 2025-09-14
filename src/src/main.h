@@ -4,14 +4,14 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <vector>
-#include <SPIFFS.h>
-#include <WiFi.h>
+// #include <SPIFFS.h>
+// #include <WiFi.h>
 #include "config.h"
-#include "wifi_connection/wifi_connection.h"
-#include "wifi_location/wifi_location.h"
-#include "UWB/UWB.h"
-#include "utils/wifi.h"
-#include "Preferences.h"
+// #include "wifi_connection/wifi_connection.h"
+// #include "wifi_location/wifi_location.h"
+// #include "UWB/UWB.h"
+// #include "utils/wifi.h"
+// #include "Preferences.h"
 #include "serial_control/serial_control.h"
 
 

@@ -1,96 +1,102 @@
 #include "KalmanFilter.h"
+#include <cmath>
 
-/**
- * @brief Kalman filter constructor.
- *
- * @param numOfDimensions Number of dimensions (e.g., 2 for 2D, 3 for 3D)
- */
-KalmanFilter::KalmanFilter(int numOfDimensions)
-    : X(numOfDimensions * 2, 1),                   // State vector: [x, y, z, vx, vy, vz] for 3D
-      F{numOfDimensions * 2, numOfDimensions * 2}, // State transition matrix
-      P(numOfDimensions * 2, numOfDimensions * 2), // Covariance matrix
-      Q(numOfDimensions * 2, numOfDimensions * 2), // Process noise covariance
-      H(numOfDimensions, numOfDimensions * 2),     // Measurement matrix
-      R(numOfDimensions, numOfDimensions),         // Measurement noise covariance
-      I(numOfDimensions * 2, numOfDimensions * 2)  // Identity matrix
+KalmanFilter::KalmanFilter(int dim, float process_noise, float measurement_noise)
+    : is_initialized_(false),
+      dim_state_(dim * 2),
+      dim_measure_(dim),
+      process_noise_std_(process_noise),
+      X(dim * 2, 1),
+      F{dim * 2, dim * 2},
+      P(dim * 2, dim * 2),
+      Q(dim * 2, dim * 2),
+      H(dim, dim * 2),
+      R(dim, dim),
+      I(dim * 2, dim * 2)
 {
-    this->numOfDimensions = numOfDimensions;
-    
-    // Initialize matrices
-    F.set_identity();
-    P.set_identity(10);
-    Q.set_identity();
-    H.set_identity();
-    R.set_identity(1);
+
+    // --- FIX 1: Correctly define the Measurement Matrix (H) ---
+    // H maps the state vector to the measurement space.
+    // We only measure position, so H should be [1, 0, 0, 0; 0, 1, 0, 0] for 2D.
+    // H.set_zero();
+    for (int i = 0; i < dim_measure_; ++i)
+    {
+        H[i][i] = 1.0f;
+    }
+
+    // --- Initialize other matrices ---
+    R.set_identity(pow(measurement_noise, 2)); // R = sigma_measure^2
+    P.set_identity(500.0f);                    // High initial uncertainty in our state estimate
     I.set_identity();
 }
 
-/**
- * @brief Predict the next state of the system.
- *
- * @param dt Time step
- */
+void KalmanFilter::init(const Matrix &initial_measurement)
+{
+    // --- FIX 2: Explicit Initialization Step ---
+    // Set the initial position from the first measurement.
+    // Assume initial velocity is zero.
+    for (int i = 0; i < dim_measure_; ++i)
+    {
+        X[i][0] = initial_measurement[i][0];
+    }
+    is_initialized_ = true;
+}
+
 void KalmanFilter::predict(float dt)
 {
-    // Update state transition matrix (F) for dt
-    for (int i = 0; i < numOfDimensions; ++i)
+    if (!is_initialized_)
+        return;
+
+    // --- Update the State Transition Matrix (F) with dt ---
+    F.set_identity();
+    for (int i = 0; i < dim_measure_; ++i)
     {
-        F[i][i + numOfDimensions] = dt;
+        F[i][i + dim_measure_] = dt;
     }
 
-    // Predict next state
-    X = F * X;
+    // --- FIX 3: Realistic Process Noise Matrix (Q) ---
+    // This Q models random acceleration, which affects both position and velocity.
+    float dt2 = dt * dt;
+    float dt3 = dt2 * dt;
+    float dt4 = dt3 * dt;
+    float noise_sq = pow(process_noise_std_, 2);
 
-    // Predict covariance
+    for (int i = 0; i < dim_measure_; ++i)
+    {
+        int pos = i;
+        int vel = i + dim_measure_;
+        Q[pos][pos] = dt4 / 4.0f * noise_sq;
+        Q[pos][vel] = dt3 / 2.0f * noise_sq;
+        Q[vel][pos] = dt3 / 2.0f * noise_sq;
+        Q[vel][vel] = dt2 * noise_sq;
+    }
+
+    // Predict the next state
+    X = F * X;
     P = F * P * F.transpose() + Q;
 }
 
-/**
- * @brief Update the state of the system based on the measurement.
- *
- * @param measurement Measurement vector
- */
 void KalmanFilter::update(const Matrix &measurement)
 {
-    Matrix Y = measurement.transpose() - (H * X);           // Measurement residual
-    Matrix S = H * P * H.transpose() + R;       // Residual covariance
-    Matrix K = P * H.transpose() * S.inverseQR(); // Kalman gain
+    // If not initialized, use this measurement to initialize the state.
+    if (!is_initialized_)
+    {
+        init(measurement);
+        return;
+    }
 
-    // Update state
+    // --- FIX 4: Correct Measurement Residual (Y) Calculation ---
+    // The original code had an incorrect transpose on the measurement.
+    Matrix Y = measurement - (H * X); // Measurement residual
+    Matrix S = H * P * H.transpose() + R; // Residual covariance
+    Matrix K = P * H.transpose() * S.inverseQR(); // Kalman gain (using regular inverse for simplicity)
+
+    // Update state estimate and covariance
     X = X + K * Y;
-
-    // Update covariance
     P = (I - K * H) * P;
 }
 
-/**
- * @brief Get the current state of the system.
- *
- * @return Matrix State vector [x, y, z, vx, vy, vz] for 3D
- * @note The state vector contains the position and velocity in each dimension.
- */
 Matrix KalmanFilter::getState() const
 {
-    return X; // Return position (x, y, z, vx, vy, vz)
-}
-
-/**
- * @brief Adjust the process noise covariance matrix based on the current speed.
- */
-void KalmanFilter::adjustKalmanNoise()
-{
-    static const float Q_MIN = 0.5f;  // Minimum process noise (stationary)
-    static const float Q_MAX = 20.0f; // Maximum process noise (fast movement)
-    static const float SCALE_FACTOR = 10.0f;
-
-    float speed = 0.0f;
-    for (int i = 0; i < numOfDimensions; ++i)
-    {
-        speed += pow(X[i + numOfDimensions][0], 2); // Sum of squared velocities
-    }
-    speed = sqrt(speed);
-
-    currentQScale = Q_MIN + (Q_MAX - Q_MIN) * (speed / SCALE_FACTOR);
-
-    Q.set_identity(currentQScale);
+    return X;
 }

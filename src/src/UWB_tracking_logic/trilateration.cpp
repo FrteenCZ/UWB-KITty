@@ -9,11 +9,10 @@ trilateration::trilateration(int numOfDimensions)
     : numOfDimensions(numOfDimensions),
       null_space(Matrix(0, 0)),
       trilatSolution(Matrix(1, numOfDimensions)),
-      alpha(0.0f)
+      alpha(0.0f),
+      kf(numOfDimensions, 10.0f, 1.0f), // tune this according to your measurement precision
+      last_update_time_ms_(0)
 {
-    // Initialize the Kalman filter with the specified number of dimensions
-    kf = KalmanFilter(numOfDimensions);
-
     // Initialize the buffer index and count
     bufferIndex = 0;
     count = 0;
@@ -91,11 +90,27 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
         }
         trilatSolution = cords;
         alpha = distances[0][0];
-        kf.update(trilatSolution);
+        kf.update(trilatSolution.transpose());
         return;
     }
 
-    // --- 1. Analyze Full 3D Geometry via PCA ---
+    // --- 1. CALCULATE TIME STEP (dt) ---
+    unsigned long now = millis();
+    float dt = (last_update_time_ms_ == 0) ? 0.01f : (now - last_update_time_ms_) / 1000.0f;
+    last_update_time_ms_ = now;
+
+    // Prevent huge dt if there's a long pause
+    // if (dt > 0.5f)
+    // {
+    //     dt = 0.5f;
+    // }
+
+    // --- 2. PREDICT THE NEXT STATE ---
+    // This step moves the filter's state forward in time, estimating a new
+    // position and velocity based on the old ones.
+    kf.predict(dt);
+
+    // --- 3. Analyze Full 3D Geometry via PCA ---
     // Compute the centroid of the anchor points
     Matrix centroid(1, cords.cols());
     for (int j = 0; j < cords.cols(); ++j)
@@ -130,12 +145,12 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
     // Serial.print("Eigenvectors (E):");
     // eigenvectors.print();
 
-    // --- 2. Transform the coordinates into the Eigenvector Basis ---
+    // --- 4. Transform the coordinates into the Eigenvector Basis ---
     Matrix transformedCords = (eigenvectors.transpose() * centeredCords.transpose()).transpose();
     // Serial.println("Transformed Coordinates:");
     // transformedCords.print();
 
-    // --- 3. Dimensionality reduction ---
+    // --- 5. Dimensionality reduction ---
     // Find how many dimensions to keep based on the eigenvalues
     int dimensionsToKeep = 0;
     if (eigenvalues[0][0] != 0)
@@ -169,7 +184,7 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
         // Serial.println("Reduced Coordinates:");
         // reducedCords.print();
 
-        // --- 4. Trilateration ---
+        // --- 6. Trilateration ---
         // Compute the linear equations
         std::pair<Matrix, Matrix> equations = computeEquations(reducedCords, distances);
         Matrix A = equations.first;  // Coefficient matrix
@@ -184,7 +199,7 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
         // Serial.println("Transformed Least Squares Solution x:");
         // x.print();
 
-        // --- 5. Transform back to original space ---
+        // --- 7. Transform back to original space ---
         // Add the missing dimensions to the solution
         Matrix lsSolution(x.rows(), numOfDimensions);
         for (int i = 0; i < dimensionsToKeep; i++)
@@ -202,7 +217,7 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
         // Serial.println("Final Point:");
         // trilatSolution.print();
 
-        // --- 6. Find alpha to get the real solution inside of the null space ---
+        // --- 8. Find alpha to get the real solution inside of the null space ---
         alpha = 0.0f;
         if (numOfDimensions - dimensionsToKeep != 0)
         {
@@ -226,7 +241,7 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
         alpha /= cords.rows();
     }
 
-    // --- 8. Gather the null space ---
+    // --- 9. Gather the null space ---
     null_space = Matrix(numOfDimensions, numOfDimensions - dimensionsToKeep);
     for (int i = 0; i < numOfDimensions; ++i)
     {
@@ -236,13 +251,12 @@ void trilateration::update(const Matrix &cords, const Matrix &distances)
         }
     }
 
-    // --- 9. Update Kalman Filter State ---
+    // --- 10. Update Kalman Filter State ---
     // Serial.print("Trilateration Solution JSON:");
     // trilatSolution.print();
-    kf.update(trilatSolution);
+    kf.update(trilatSolution.transpose());
     // Serial.print("Kalman Filter State JSON:");
     // getState().transpose().print();
-
 }
 
 /**
