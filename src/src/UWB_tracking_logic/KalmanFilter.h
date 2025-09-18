@@ -18,19 +18,19 @@ public:
      * @brief Initializes the filter with the first measurement.
      * @param initial_measurement The first measurement vector (positions).
      */
-    void init(const Matrix& initial_measurement);
+    void init(const Matrix &initial_measurement);
 
     /**
      * @brief Predicts the next state of the system.
      * @param dt The time step since the last prediction.
      */
-    void predict(float dt);
+    void predict(unsigned long current_time);
 
     /**
      * @brief Updates the state of the system based on a new measurement.
      * @param measurement The new measurement vector (positions).
      */
-    void update(const Matrix& measurement);
+    void update(Matrix measurement, const Matrix &null_space, float alpha, unsigned long current_time);
 
     /**
      * @brief Gets the current estimated state.
@@ -40,9 +40,10 @@ public:
 
 private:
     bool is_initialized_;
-    int dim_state_;      // Dimension of the state vector (e.g., 4 for 2D)
-    int dim_measure_;    // Dimension of the measurement vector (e.g., 2 for 2D)
+    int dim_state_;           // Dimension of the state vector (e.g., 4 for 2D)
+    int dim_measure_;         // Dimension of the measurement vector (e.g., 2 for 2D)
     float process_noise_std_; // Standard deviation for process noise
+    unsigned long last_update_time_ms_;
 
     Matrix X; // State vector
     Matrix F; // State transition matrix
