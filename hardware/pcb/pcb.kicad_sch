@@ -6672,6 +6672,15 @@
 				(hide yes)
 			)
 		)
+		(property "Shop link" "kus"
+			(at 245.11 54.61 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "9"
 			(uuid "f68322b7-09e0-4978-89f5-dc856afc8272")
 		)
@@ -6787,6 +6796,15 @@
 				(hide yes)
 			)
 		)
+		(property "Shop link" ""
+			(at 153.67 63.5 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "5212286b-8b4d-4812-972b-783adc46f984")
 		)
@@ -6866,6 +6884,15 @@
 			)
 		)
 		(property "LCSC Part" "~"
+			(at 97.79 171.45 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Shop link" ""
 			(at 97.79 171.45 0)
 			(effects
 				(font
@@ -7082,6 +7109,15 @@
 				(hide yes)
 			)
 		)
+		(property "Shop link" ""
+			(at 217.17 114.3 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "c4657af2-a706-44cb-9f33-36f7948d70de")
 		)
@@ -7151,6 +7187,15 @@
 			)
 		)
 		(property "LCSC Part" "https://lcsc.com/product-detail/Schottky-Diodes_FUXINSEMI-MBR230LSFT1G_C7422638.html"
+			(at 64.77 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Shop link" "https://www.lcsc.com/product-detail/C22374920.html?s_z=n_D_SOD-123%2520D_shottky"
 			(at 64.77 142.24 0)
 			(effects
 				(font
@@ -7765,6 +7810,15 @@
 				(hide yes)
 			)
 		)
+		(property "Shop link" ""
+			(at 217.17 140.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "cfb3b00d-f912-4fe7-959e-0768aea2c790")
 		)
@@ -8041,6 +8095,15 @@
 				(hide yes)
 			)
 		)
+		(property "Shop link" ""
+			(at 217.17 132.08 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "24189719-466c-47d3-854c-171487a2740a")
 		)
@@ -8109,6 +8172,15 @@
 			)
 		)
 		(property "LCSC Part" "~"
+			(at 153.67 66.04 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Shop link" ""
 			(at 153.67 66.04 90)
 			(effects
 				(font
@@ -8270,6 +8342,15 @@
 				(hide yes)
 			)
 		)
+		(property "Shop link" ""
+			(at 148.59 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "e5d5debb-5462-41c5-b9e2-9c827f5f1d8b")
 		)
@@ -8338,6 +8419,15 @@
 			)
 		)
 		(property "LCSC Part" "~"
+			(at 134.62 45.72 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Shop link" ""
 			(at 134.62 45.72 90)
 			(effects
 				(font
@@ -8504,7 +8594,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "7b436897-23af-4d7e-8399-2e930b1d73a3")
-		(property "Reference" "SW1"
+		(property "Reference" "SWITCH1"
 			(at 252.73 100.33 0)
 			(effects
 				(font
@@ -8547,6 +8637,15 @@
 				(hide yes)
 			)
 		)
+		(property "Shop link" "https://www.lcsc.com/product-detail/C393938.html?s_z=n_SW%2520push%25206mm%2520THT"
+			(at 252.73 107.95 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "f6a12160-d1a9-41b8-96fc-5b361bf42831")
 		)
@@ -8556,7 +8655,7 @@
 		(instances
 			(project ""
 				(path "/9dc8e51d-ce6f-43bb-9eca-8a5aff8e2cbe"
-					(reference "SW1")
+					(reference "SWITCH1")
 					(unit 1)
 				)
 			)
@@ -8615,6 +8714,15 @@
 			)
 		)
 		(property "Sim.Pin" "1=K 2=A"
+			(at 217.17 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Shop link" ""
 			(at 217.17 123.19 0)
 			(effects
 				(font
@@ -8686,6 +8794,15 @@
 		)
 		(property "Description" "802.11 b/g/n Wi­Fi and Bluetooth 5 module, ESP32­C3 SoC, RISC­V microprocessor, On-board antenna"
 			(at 171.45 55.245 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Shop link" "https://www.lcsc.com/product-detail/C2934560.html?s_z=n_ESP32-C3"
+			(at 171.45 55.88 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -9010,6 +9127,15 @@
 				(hide yes)
 			)
 		)
+		(property "Shop link" ""
+			(at 210.82 114.3 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "182a2aa8-ecb3-4b06-b1a3-1c895e536bb6")
 		)
@@ -9078,6 +9204,15 @@
 			)
 		)
 		(property "LCSC Part" "https://lcsc.com/product-detail/DC-DC-Converters_Texas-Instruments-TPS62291DRVR_C52772.html"
+			(at 124.46 162.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Shop link" "https://www.lcsc.com/product-detail/C52772.html?s_z=n_TPS62291"
 			(at 124.46 162.56 0)
 			(effects
 				(font
@@ -9170,6 +9305,15 @@
 			)
 		)
 		(property "LCSC Part" "https://lcsc.com/product-detail/USB-Connectors_G-Switch-GT-USB-7010ASV_C2988369.html"
+			(at 33.02 157.48 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Shop link" "https://www.lcsc.com/product-detail/C5362630.html?s_z=n_USB-7010"
 			(at 33.02 157.48 0)
 			(effects
 				(font
@@ -9412,6 +9556,15 @@
 		)
 		(property "Description" "Resistor, small symbol"
 			(at 210.82 140.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Shop link" ""
+			(at 210.82 140.97 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -9759,6 +9912,15 @@
 				(hide yes)
 			)
 		)
+		(property "Shop link" ""
+			(at 50.8 147.32 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "165b6318-e989-45e2-9cbf-2a43ee7cf966")
 		)
@@ -9959,6 +10121,15 @@
 				(hide yes)
 			)
 		)
+		(property "Shop link" "https://www.lcsc.com/product-detail/C114586.html?s_z=n_WS2812B%25205x5"
+			(at 157.48 127 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "4"
 			(uuid "865439c9-af37-4ffd-9116-322182782b7a")
 		)
@@ -10107,6 +10278,15 @@
 				(hide yes)
 			)
 		)
+		(property "Shop link" ""
+			(at 50.8 149.86 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "f90f330e-c965-4c7d-81a2-c451f12ba58e")
 		)
@@ -10243,6 +10423,15 @@
 				(hide yes)
 			)
 		)
+		(property "Shop link" ""
+			(at 260.35 147.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "aa26f942-3b37-486e-9b65-5ad7fd60f04d")
 		)
@@ -10268,7 +10457,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "e7c6e525-c558-4833-97bf-6ee296d377bf")
-		(property "Reference" "SW2"
+		(property "Reference" "SWITCH2"
 			(at 252.73 146.05 0)
 			(effects
 				(font
@@ -10311,6 +10500,15 @@
 				(hide yes)
 			)
 		)
+		(property "Shop link" "https://www.lcsc.com/product-detail/C393938.html?s_z=n_SW%2520push%25206mm%2520THT"
+			(at 252.73 153.67 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "d71718a2-9422-45df-a2f7-355b7df0fc07")
 		)
@@ -10320,7 +10518,7 @@
 		(instances
 			(project "pcb"
 				(path "/9dc8e51d-ce6f-43bb-9eca-8a5aff8e2cbe"
-					(reference "SW2")
+					(reference "SWITCH2")
 					(unit 1)
 				)
 			)
@@ -10441,6 +10639,15 @@
 			)
 		)
 		(property "Description" "Ultra wide band RF module With ranging location capabilities"
+			(at 55.88 60.96 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Shop link" "https://www.aliexpress.com/item/1005006968042289.html?spm=a2g0o.productlist.main.4.12a0546485Cw39&aem_p4p_detail=2025112800111414233397752720280002780567&algo_pvid=1672a2ba-2c28-4e26-8bef-a617b139e1b6&algo_exp_id=1672a2ba-2c28-4e26-8bef-a617b139e1b6-3&pdp_ext_f=%7B%22order%22%3A%2260%22%2C%22eval%22%3A%221%22%2C%22fromPage%22%3A%22search%22%7D&pdp_npi=6%40dis%21CZK%21864.24%21535.85%21%21%2140.45%2125.08%21%40210388c917643174745702964ee70c%2112000051951110549%21sea%21CZ%210%21ABX%211%210%21n_tag%3A-29910%3Bd%3A52b1352e%3Bm03_new_user%3A-29895&curPageLogUid=eR3sWZrN7rGD&utparam-url=scene%3Asearch%7Cquery_from%3A%7Cx_object_id%3A1005006968042289%7C_p_origin_prod%3A&search_p4p_id=2025112800111414233397752720280002780567_1"
 			(at 55.88 60.96 0)
 			(effects
 				(font
@@ -10585,6 +10792,15 @@
 				(hide yes)
 			)
 		)
+		(property "Shop link" ""
+			(at 97.79 46.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "c6c6d9c7-b60b-4da0-b3f1-cbedc163db3b")
 		)
@@ -10647,6 +10863,15 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x15, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 260.35 54.61 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Shop link" "kus"
 			(at 260.35 54.61 0)
 			(effects
 				(font
@@ -10780,6 +11005,15 @@
 				(hide yes)
 			)
 		)
+		(property "Shop link" "https://www.lcsc.com/product-detail/C281115.html?s_z=n_L_0805%25202.2uH%25201.2A"
+			(at 104.14 160.02 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "ff9a25f0-de45-42ca-b11c-ba88d9b2e395")
 		)
@@ -10849,6 +11083,15 @@
 				(hide yes)
 			)
 		)
+		(property "Shop link" ""
+			(at 210.82 123.19 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "9d665de7-3075-4940-994c-2d670145f7be")
 		)
@@ -10911,6 +11154,15 @@
 		)
 		(property "Description" "Resistor, small symbol"
 			(at 210.82 132.08 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Shop link" ""
+			(at 210.82 132.08 90)
 			(effects
 				(font
 					(size 1.27 1.27)

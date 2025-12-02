@@ -68,46 +68,6 @@
           ""
         ],
         [
-          "silk_edge_clearance|112036000|49100000|d022d8c7-86f0-4658-862a-981381b3639a|9f4f1a1f-3e50-47aa-a2b1-8ad458207e70",
-          ""
-        ],
-        [
-          "silk_edge_clearance|116078000|90238200|d022d8c7-86f0-4658-862a-981381b3639a|45432ee0-8c06-40de-a567-3e1e0a813b02",
-          ""
-        ],
-        [
-          "silk_edge_clearance|116078000|99398200|d022d8c7-86f0-4658-862a-981381b3639a|ec2e6c49-71ab-467d-9751-b3579f028406",
-          ""
-        ],
-        [
-          "silk_edge_clearance|89201200|103750000|d022d8c7-86f0-4658-862a-981381b3639a|f15eb40c-a013-4834-90a7-d6eaf00ea93a",
-          ""
-        ],
-        [
-          "silk_edge_clearance|89201200|104100000|d022d8c7-86f0-4658-862a-981381b3639a|23c0c30b-b95d-457a-bd96-73acb8e5e1e6",
-          ""
-        ],
-        [
-          "silk_edge_clearance|89201200|90250000|d022d8c7-86f0-4658-862a-981381b3639a|7c4bb913-6610-4f19-90f2-80ed20542a33",
-          ""
-        ],
-        [
-          "silk_edge_clearance|93816000|48958000|d022d8c7-86f0-4658-862a-981381b3639a|df5a4773-7492-408a-89c9-6068d17ce95e",
-          ""
-        ],
-        [
-          "silk_edge_clearance|93826000|49158000|d022d8c7-86f0-4658-862a-981381b3639a|42b93dbb-f4bc-40ce-bda3-9afeb1e2b86d",
-          ""
-        ],
-        [
-          "silk_overlap|101950000|86003641|6c4c7556-b88d-41ee-a78d-10b6d67b1f51|a5eb8a79-29fe-442e-8504-b7be88ef285a",
-          ""
-        ],
-        [
-          "silk_overlap|102954819|85683332|3f3bd9d0-4469-43e2-aa55-c0a32538871b|ff419c8b-a1dc-4448-a4bb-c327b115cc90",
-          ""
-        ],
-        [
           "silk_overlap|108658566|86312270|39b0cf6c-f88d-46ae-aed5-2ec355035b21|f88c3714-6660-44e1-b60e-7a60e83ec92f",
           ""
         ],
@@ -116,7 +76,7 @@
           ""
         ],
         [
-          "silk_overlap|99664000|85892666|801c0041-90dc-419e-b73a-9ca5abf046bd|94d4aefe-b490-4361-9d20-042df1c21f9f",
+          "silk_overlap|98138000|85879641|2950af38-4e2e-440f-bca5-dfb60be87e48|84ddeac3-a43a-46f8-8b8c-e7cd242c0560",
           ""
         ],
         [
@@ -679,12 +639,48 @@
           "label": "Datasheet",
           "name": "Datasheet",
           "show": true
+        },
+        {
+          "group_by": false,
+          "label": "LCSC Part",
+          "name": "LCSC Part",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "Sim.Pin",
+          "name": "Sim.Pin",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "Description_1",
+          "name": "Description_1",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "Popis",
+          "name": "Description",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "#",
+          "name": "${ITEM_NUMBER}",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "Shop link",
+          "name": "Shop link",
+          "show": true
         }
       ],
       "filter_string": "",
       "group_symbols": true,
       "include_excluded_from_bom": true,
-      "name": "Default Editing",
+      "name": "",
       "sort_asc": true,
       "sort_field": "Reference"
     },
