@@ -37,9 +37,9 @@
         "other_text_thickness": 0.15,
         "other_text_upright": false,
         "pads": {
-          "drill": 0.8,
-          "height": 1.27,
-          "width": 2.54
+          "drill": 1.0,
+          "height": 1.7,
+          "width": 1.7
         },
         "silk_line_width": 0.1,
         "silk_text_italic": false,
@@ -68,15 +68,7 @@
           ""
         ],
         [
-          "silk_overlap|108658566|86312270|39b0cf6c-f88d-46ae-aed5-2ec355035b21|f88c3714-6660-44e1-b60e-7a60e83ec92f",
-          ""
-        ],
-        [
           "silk_overlap|111358000|86054190|8f4402be-201e-487e-8439-f279db9c10dd|c1461e92-e3c4-45bc-b97f-aa8cd9975e25",
-          ""
-        ],
-        [
-          "silk_overlap|98138000|85879641|2950af38-4e2e-440f-bca5-dfb60be87e48|84ddeac3-a43a-46f8-8b8c-e7cd242c0560",
           ""
         ],
         [
@@ -644,7 +636,7 @@
           "group_by": false,
           "label": "LCSC Part",
           "name": "LCSC Part",
-          "show": false
+          "show": true
         },
         {
           "group_by": false,
