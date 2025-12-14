@@ -1,3 +1,5 @@
 pcb-backups/
 fp-info-cache
 pcb.kicad_prl
+production/
+fabrication-toolkit-options.json

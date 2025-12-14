@@ -7081,7 +7081,7 @@
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "2b4eeab1-6c45-44cc-b5d4-9e0dcf65fc47")
 		(property "Reference" "D-RXOK1"
 			(at 217.17 109.22 0)
@@ -7933,7 +7933,7 @@
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "5ff15870-a744-45e8-aab4-e376c16001c5")
 		(property "Reference" "D-TX1"
 			(at 217.17 135.89 0)
@@ -8218,7 +8218,7 @@
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "68782c83-a9ba-4e73-84cf-9bbe2202efcb")
 		(property "Reference" "D-RX1"
 			(at 217.17 127 0)
@@ -8769,7 +8769,7 @@
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "7dc3a54d-f274-49a9-849c-8c006a1e88be")
 		(property "Reference" "D-SFD1"
 			(at 217.17 118.11 0)
@@ -9276,7 +9276,7 @@
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "97fa1e23-8365-4b2e-806c-d8d40e9441c6")
 		(property "Reference" "R9"
@@ -9712,7 +9712,7 @@
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "b6b22a0d-1d72-4fbd-aad6-e4a2d8fe1c13")
 		(property "Reference" "R6"
@@ -10249,7 +10249,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part" "C413002"
+		(property "LCSC Part" "C2791532"
 			(at 50.8 147.32 90)
 			(effects
 				(font
@@ -10624,7 +10624,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part" "C413002"
+		(property "LCSC Part" "C2791532"
 			(at 50.8 149.86 90)
 			(effects
 				(font
@@ -10970,7 +10970,7 @@
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "ed2578a9-e8ff-4c23-b096-ba9b66653d2e")
 		(property "Reference" "DWM1"
@@ -11419,7 +11419,7 @@
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "f7718c55-b762-4324-8d82-0f9bf0ec9360")
 		(property "Reference" "R8"
@@ -11497,7 +11497,7 @@
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "fcae1be1-9978-4f91-b70f-e2250e60a213")
 		(property "Reference" "R7"
