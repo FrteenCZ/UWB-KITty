@@ -7606,7 +7606,7 @@
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "40aa08d3-6f81-4b0d-86ee-8f4bbe7a9042")
 		(property "Reference" "D1"
@@ -10212,7 +10212,7 @@
 				)
 			)
 		)
-		(property "Value" "R"
+		(property "Value" "100"
 			(at 123.19 123.19 90)
 			(effects
 				(font
@@ -10240,6 +10240,15 @@
 		)
 		(property "Description" "Resistor"
 			(at 123.19 127 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C106232"
+			(at 123.19 127 90)
 			(effects
 				(font
 					(size 1.27 1.27)
