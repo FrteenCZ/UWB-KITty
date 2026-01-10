@@ -17,17 +17,14 @@ WebServer server(80);
 
 String onboardledState = "OFF";
 
-
 void setup()
 {
     Serial.begin(115200);
-
-
+    
+    UWB_setup();
+    StatusLED_setup();
 
     pinMode(BUTTON_PIN, INPUT_PULLUP);
-
-
-    
 }
 
 void loop()
@@ -35,12 +32,6 @@ void loop()
     // Handle serial input
     serialTask();
 
-  // if (digitalRead(BUTTON_PIN) == LOW) {
-  //   // Button pressed
-  //   StatusLED_setColor(0, 255, 0); // Green
-  // } else {
-  //   // Button released
-  //   StatusLED_setColor(0, 0, 0); // Off
-  // }
-    
+    // UWB processing
+    UWB_loop();
 }

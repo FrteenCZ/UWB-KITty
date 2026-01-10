@@ -307,7 +307,7 @@ void UWB_setup()
     bestDelay = preferences.getInt("antennaDelay", DEFAULT_ANTENNA_DELAY);
     preferences.end();
 
-    SPI.begin(14, 12, 13); // SCK, MISO, MOSI
+    SPI.begin(UWB_PIN_SPI_SCK, UWB_PIN_SPI_MISO, UWB_PIN_SPI_MOSI); // SCK, MISO, MOSI
 
     // init the configuration
     DW1000Ranging.initCommunication(UWB_PIN_SPI_RST, UWB_PIN_SPI_SS, UWB_PIN_SPI_IRQ); // Reset, CS, IRQ pin
