@@ -22,10 +22,7 @@ void setup()
 {
     Serial.begin(115200);
 
-    // pinMode(onboardledPin, OUTPUT);
 
-    onboardledState = "on";
-    // digitalWrite(onboardledPin, HIGH);
 
     pinMode(BUTTON_PIN, INPUT_PULLUP);
 
@@ -36,14 +33,14 @@ void setup()
 void loop()
 {
     // Handle serial input
-    handleSerialInput();
+    serialTask();
 
-  if (digitalRead(BUTTON_PIN) == LOW) {
-    // Button pressed
-    StatusLED_setColor(0, 255, 0); // Green
-  } else {
-    // Button released
-    StatusLED_setColor(0, 0, 0); // Off
-  }
+  // if (digitalRead(BUTTON_PIN) == LOW) {
+  //   // Button pressed
+  //   StatusLED_setColor(0, 255, 0); // Green
+  // } else {
+  //   // Button released
+  //   StatusLED_setColor(0, 0, 0); // Off
+  // }
     
 }

@@ -6,333 +6,323 @@ std::unordered_map<std::string, trilateration> vDevices;
 
 // trilateration trilat;
 
-void handleSerialInput()
+using CommandFn = void (*)(const String &args);
+
+struct Command
 {
-    if (Serial.available())
+    const char *name;
+    CommandFn fn;
+    const char *help;
+};
+
+void cmd_help(const String &args);
+void cmd_ping(const String &args);
+void cmd_status_LED(const String &args);
+void cmd_points(const String &args);
+void cmd_change_role(const String &args);
+void cmd_wifi(const String &args);
+void cmd_uwb(const String &args);
+
+Command commands[] = {
+    {"help", cmd_help, "List all commands"},
+    {"ping", cmd_ping, "ping → check connection"},
+    {"LED", cmd_status_LED, "LED <red|green|blue|off> → control onboard LED"},
+    {"points", cmd_points, "points <json> → process trilateration points"},
+    {"change_role", cmd_change_role, "change_role <json> → change device role"},
+    {"wifi", cmd_wifi, "wifi <auto|AP|connect to SSID PASSWORD|scan|location> → WiFi control"},
+    {"UWB", cmd_uwb, "UWB <start|stop|status|switch mode> → UWB control"},
+};
+const size_t COMMAND_COUNT = sizeof(commands) / sizeof(commands[0]);
+
+void handleCommand(const String &line)
+{
+    int space = line.indexOf(' ');
+    String cmd = (space == -1) ? line : line.substring(0, space);
+    String args = (space == -1) ? "" : line.substring(space + 1);
+
+    for (size_t i = 0; i < COMMAND_COUNT; i++)
     {
-        String input = Serial.readStringUntil('\n');
-        // Serial.println("Received: " + input);
-
-        // LED control
-        if (input == "LED ON")
+        if (cmd.equalsIgnoreCase(commands[i].name))
         {
-            digitalWrite(onboardledPin, HIGH);
-            Serial.println("LED is ON");
+            commands[i].fn(args);
+            return;
         }
-        else if (input == "LED OFF")
+    }
+
+    Serial.println("{\"error\":\"unknown_command\"}");
+    Serial.println("Type 'help' for a list of available commands.");
+}
+
+String inputLine;
+void serialTask()
+{
+    while (Serial.available())
+    {
+        String inputLine = Serial.readStringUntil('\n');
+        inputLine.trim();
+        if (inputLine.length() > 0)
         {
-            digitalWrite(onboardledPin, LOW);
-            Serial.println("LED is OFF");
+            handleCommand(inputLine);
         }
+    }
+}
 
-        // Handle trilateration input
-        // else if (input.startsWith("cords["))
-        // {
-        //     float x, y, z, d;
-        //     // First, determine if the input is 2D or 3D
-        //     if (!modeSet && sscanf(input.c_str(), "cords[%f,%f,%f],%f", &x, &y, &z, &d) == 4 ||
-        //         sscanf(input.c_str(), "cords[%f,%f,%f]", &x, &y, &z) == 3)
-        //     {
-        //         is2D = false;
-        //         modeSet = true;
-        //         Serial.println("3D mode set.");
-        //         trilat = trilateration(3); // Initialize 3D trilateration
-        //     }
-        //     else if (!modeSet && sscanf(input.c_str(), "cords[%f,%f],%f", &x, &y, &d) == 3 ||
-        //              sscanf(input.c_str(), "cords[%f,%f]", &x, &y) == 2)
-        //     {
-        //         is2D = true;
-        //         modeSet = true;
-        //         Serial.println("2D mode set.");
-        //         trilat = trilateration(2); // Initialize 2D trilateration
-        //     }
+// =====================================================================================================
+// ====================================== Command Implementations ======================================
+// =====================================================================================================
 
-        //     // After mode is determined, parse using the right pattern
-        //     if (sscanf(input.c_str(), "cords[%f,%f,%f],%f", &x, &y, &z, &d) == 4 ||
-        //         sscanf(input.c_str(), "cords[%f,%f,%f]", &x, &y, &z) == 3)
-        //     {
-        //         if (sscanf(input.c_str(), "cords[%f,%f,%f]", &x, &y, &z) == 3)
-        //         {
-        //             d = distance; // Use the own measured distance
-        //         }
-        //         if (is2D)
-        //         {
-        //             Serial.println("Warning: Input is 3D but mode is set to 2D. Ignoring z-coordinate.");
-        //             trilat.updateSinglePoint({x, y, d});
-        //         }
-        //         else
-        //         {
-        //             trilat.updateSinglePoint({x, y, z, d});
-        //         }
-        //     }
-        //     else if (sscanf(input.c_str(), "cords[%f,%f],%f", &x, &y, &d) == 3 ||
-        //              sscanf(input.c_str(), "cords[%f,%f]", &x, &y) == 2)
-        //     {
-        //         if (sscanf(input.c_str(), "cords[%f,%f]", &x, &y) == 2)
-        //         {
-        //             d = distance; // Use the own measured distance
-        //         }
-        //         if (!is2D)
-        //         {
-        //             Serial.println("Warning: Input is 2D but mode is set to 3D. Providing default z=0.");
-        //             z = 0;
-        //             trilat.updateSinglePoint({x, y, z, d});
-        //         }
-        //         else
-        //         {
-        //             trilat.updateSinglePoint({x, y, d});
-        //         }
-        //     }
-        //     else
-        //     {
-        //         Serial.println("Invalid input format. Expected format: cords[x,y,z],d or cords[x,y],d or cords[x,y,z] or cords[x,y]");
-        //     }
-        // }
-        else if (input.startsWith("points:"))
+// List all available commands
+void cmd_help(const String &)
+{
+    for (size_t i = 0; i < COMMAND_COUNT; i++)
+    {
+        Serial.print(commands[i].name);
+        Serial.print(" - ");
+        Serial.println(commands[i].help);
+    }
+}
+
+// Basic ping command to check connection
+void cmd_ping(const String &)
+{
+    Serial.println("pong");
+}
+
+// Control the status LED
+void cmd_status_LED(const String &args)
+{
+    if (args == "red")
+    {
+        StatusLED_setColor(255, 0, 0);
+    }
+    else if (args == "green")
+    {
+        StatusLED_setColor(0, 255, 0);
+    }
+    else if (args == "blue")
+    {
+        StatusLED_setColor(0, 0, 255);
+    }
+    else if (args == "off")
+    {
+        StatusLED_setColor(0, 0, 0);
+    }
+    else
+    {
+        Serial.println("{\"error\":\"invalid_mode\"}");
+        return;
+    }
+
+    Serial.println("{\"status\":\"ok\"}");
+}
+
+// Process trilateration points
+void cmd_points(const String &args)
+{
+    StaticJsonDocument<256> doc;
+    DeserializationError err = deserializeJson(doc, args);
+
+    if (err)
+    {
+        Serial.println("{\"error\":\"invalid_json\"}");
+        return;
+    }
+
+    // Extract device name
+    String devName = doc["device"] | "default";
+    std::string devNameStd = std::string(devName.c_str());
+
+    // Create device if not exists
+    if (vDevices.find(devNameStd) == vDevices.end())
+    {
+        vDevices[devNameStd] = trilateration();
+        Serial.printf("Created new virtual device: %s\n", devName.c_str());
+    }
+
+    trilateration &trilat = vDevices[devNameStd];
+
+    // Get points array
+    JsonArray arr = doc["distances"].as<JsonArray>();
+    int count = arr.size();
+    int numOfDimensions = is2D ? 2 : 3;
+
+    Matrix cords(count, numOfDimensions);
+    Matrix distances(count, 1);
+
+    // Dimension check
+    if (is2D && arr[0]["location"].size() == 3)
+    {
+        Serial.println("Warning: Input is 3D but mode is set to 2D. Ignoring z-coordinate.");
+    }
+    else if (!is2D && arr[0]["location"].size() == 2)
+    {
+        Serial.println("Warning: Input is 2D but mode is set to 3D. Providing default z=0.");
+    }
+
+    // Parse array
+    for (int i = 0; i < count; i++)
+    {
+        JsonObject obj = arr[i];
+        DataPoint p;
+        p.x = obj["location"]["x"].as<float>();
+        p.y = obj["location"]["y"].as<float>();
+        p.z = obj["location"]["z"].is<float>() ? obj["location"]["z"].as<float>() : 0;
+        p.d = obj["distance"].as<float>();
+
+        if (is2D)
         {
-            JsonDocument doc;
-
-            DeserializationError error = deserializeJson(doc, input.substring(8));
-
-            if (error)
-            {
-                Serial.print(F("deserializeJson() failed: "));
-                Serial.println(error.f_str());
-                return;
-            }
-
-            // Extract device name
-            String devName = doc["device"] | "default";
-            std::string devNameStd = std::string(devName.c_str());
-
-            // Create device if not exists
-            if (vDevices.find(devNameStd) == vDevices.end())
-            {
-                vDevices[devNameStd] = trilateration();
-                Serial.printf("Created new virtual device: %s\n", devName.c_str());
-            }
-
-            trilateration &trilat = vDevices[devNameStd];
-
-            // Get points array
-            JsonArray arr = doc["distances"].as<JsonArray>();
-            int count = arr.size();
-            int numOfDimensions = is2D ? 2 : 3;
-
-            Matrix cords(count, numOfDimensions);
-            Matrix distances(count, 1);
-
-            // Dimension check
-            if (is2D && arr[0]["location"].size() == 3)
-            {
-                Serial.println("Warning: Input is 3D but mode is set to 2D. Ignoring z-coordinate.");
-            }
-            else if (!is2D && arr[0]["location"].size() == 2)
-            {
-                Serial.println("Warning: Input is 2D but mode is set to 3D. Providing default z=0.");
-            }
-
-            // Parse array
-            for (int i = 0; i < count; i++)
-            {
-                JsonObject obj = arr[i];
-                DataPoint p;
-                p.x = obj["location"]["x"].as<float>();
-                p.y = obj["location"]["y"].as<float>();
-                p.z = obj["location"]["z"].is<float>() ? obj["location"]["z"].as<float>() : 0;
-                p.d = obj["distance"].as<float>();
-
-                if (is2D)
-                {
-                    cords[i][0] = p.x;
-                    cords[i][1] = p.y;
-                    distances[i][0] = p.d;
-                }
-                else
-                {
-                    cords[i][0] = p.x;
-                    cords[i][1] = p.y;
-                    cords[i][2] = p.z;
-                    distances[i][0] = p.d;
-                }
-            }
-
-            // Update correct trilateration instance
-            trilat.update(cords, distances, millis());
-
-            // Print output
-            Serial.printf(
-                "data: "
-                "{\"device\": \"%s\", "
-                "\"null_space\": %s, "
-                "\"alpha\": %.6f, "
-                "\"trilateration\": %s, "
-                "\"kalman\": %s}\n",
-                devName,
-                trilat.null_space.transpose().toString().c_str(),
-                trilat.alpha,
-                trilat.trilatSolution.toString().c_str(),
-                trilat.getState().transpose().toString().c_str());
+            cords[i][0] = p.x;
+            cords[i][1] = p.y;
+            distances[i][0] = p.d;
         }
-        else if (input.startsWith("change role:"))
-        {
-            JsonDocument doc;
-
-            DeserializationError error = deserializeJson(doc, input.substring(8));
-
-            if (error)
-            {
-                Serial.print(F("deserializeJson() failed: "));
-                Serial.println(error.f_str());
-                return;
-            }
-
-            // Extract device name
-            String devName = doc["device"] | "default";
-            std::string devNameStd = std::string(devName.c_str());
-
-            // Delete device if not exists
-            if (vDevices.find(devNameStd) == vDevices.end())
-            {
-                vDevices[devNameStd] = trilateration();
-                Serial.printf("Created new virtual device: %s\n", devName.c_str());
-            }
-        }
-        // else if (input == "getState")
-        // {
-        //     Matrix state = trilat.getState();
-        //     Serial.print("Current state: ");
-        //     for (int i = 0; i < state.rows(); i++)
-        //     {
-        //         for (int j = 0; j < state.cols(); j++)
-        //         {
-        //             Serial.print(state[i][j]);
-        //             Serial.print(" ");
-        //         }
-        //         Serial.println();
-        //     }
-        // }
-        // else if (input == "printBuffer")
-        // {
-        //     trilat.printBuffer();
-        // }
-
-        // WiFi control
-        else if (input == "WiFi auto")
-        {
-            connect_to_wifi();
-        }
-        else if (input == "WiFi AP")
-        {
-            start_AP("ESP32-AP", "12345678");
-        }
-        else if (input.startsWith("WiFi connect to ")) // Example input: "WiFi connect to MySSID MyPassword"
-        {
-            String ssid = input.substring(16, input.indexOf(' ', 16));
-            String password = input.substring(input.indexOf(' ', 16) + 1);
-            connect_to_wifi(1, 5, ssid.c_str(), password.c_str());
-        }
-        else if (input == "WiFi scan")
-        {
-            scan_wifi();
-        }
-
-        // WiFi location control
-        else if (input == "WiFi location")
-        {
-            scan_wifi();
-
-            // Load stored locations
-            File file = SPIFFS.open("/networks.json", "r");
-            if (!file)
-            {
-                Serial.println("Failed to open file for reading");
-                return;
-            }
-
-            // Read file into a string
-            String content = file.readString();
-            file.close();
-
-            // Parse the string into a JSON document
-            JsonDocument doc;
-            DeserializationError error = deserializeJson(doc, content);
-            if (error)
-            {
-                Serial.print("Failed to parse JSON: ");
-                Serial.println(error.c_str());
-                return;
-            }
-
-            // Extract the JSON object
-            JsonObject root = doc.as<JsonObject>();
-
-            // Find the matching location
-            findMatchingLocation(root);
-            Serial.println(bestMatch.name);
-            Serial.printf("Location: %f, %f, %f\n", bestMatch.location[0], bestMatch.location[1], bestMatch.location[2]);
-        }
-
-        // UWB control
-        else if (input == "UWB start")
-        {
-            Serial.println("Starting UWB...");
-            UWB_start();
-        }
-        else if (input == "UWB stop")
-        {
-            Serial.println("Stopping UWB...");
-            UWB_stop();
-        }
-        else if (input == "UWB status")
-        {
-            Serial.println("UWB status: ...");
-            if (isRanging)
-            {
-                Serial.println("Ranging is active");
-            }
-            if (isAnchor)
-            {
-                Serial.println("Device is in anchor mode");
-            }
-            else
-            {
-                Serial.println("Device is in tag mode");
-            }
-            Serial.print("Distance: ");
-            Serial.println(distance);
-        }
-        else if (input == "UWB switch mode")
-        {
-            Serial.println("Switching UWB mode...");
-            UWB_switchMode();
-        }
-
-        // help command
-        else if (input == "help")
-        {
-            Serial.println("<----Available commands---->");
-            Serial.println("LED ON");
-            Serial.println("LED OFF");
-            Serial.println("cords[x,y,z],d or cords[x,y],d or cords[x,y,z] or cords[x,y]");
-            Serial.println("getState");
-            Serial.println("printBuffer");
-            Serial.println("WiFi auto");
-            Serial.println("WiFi AP");
-            Serial.println("WiFi connect to SSID PASSWORD");
-            Serial.println("WiFi scan");
-            Serial.println("WiFi location");
-            Serial.println("UWB start");
-            Serial.println("UWB stop");
-            Serial.println("UWB status");
-            Serial.println("UWB switch mode");
-        }
-
-        // Unknown command
         else
         {
-            Serial.println("Unknown command: " + input);
-            Serial.println("Type 'help' for a list of available commands.");
+            cords[i][0] = p.x;
+            cords[i][1] = p.y;
+            cords[i][2] = p.z;
+            distances[i][0] = p.d;
         }
+    }
+
+    // Update correct trilateration instance
+    trilat.update(cords, distances, millis());
+
+    // Print output
+    Serial.printf(
+        "data: "
+        "{\"device\": \"%s\", "
+        "\"null_space\": %s, "
+        "\"alpha\": %.6f, "
+        "\"trilateration\": %s, "
+        "\"kalman\": %s}\n",
+        devName,
+        trilat.null_space.transpose().toString().c_str(),
+        trilat.alpha,
+        trilat.trilatSolution.toString().c_str(),
+        trilat.getState().transpose().toString().c_str());
+}
+
+// Change device role
+void cmd_change_role(const String &args)
+{
+    StaticJsonDocument<256> doc;
+    DeserializationError err = deserializeJson(doc, args);
+
+    if (err)
+    {
+        Serial.println("{\"error\":\"invalid_json\"}");
+        return;
+    }
+
+    // Extract device name
+    String devName = doc["device"] | "default";
+    std::string devNameStd = std::string(devName.c_str());
+
+    // Delete device if not exists
+    if (vDevices.find(devNameStd) == vDevices.end())
+    {
+        vDevices[devNameStd] = trilateration();
+        Serial.printf("Created new virtual device: %s\n", devName.c_str());
+    }
+}
+
+// WiFi command handler
+void cmd_wifi(const String &args)
+{
+    if (args == "auto")
+    {
+        connect_to_wifi();
+    }
+    else if (args == "AP")
+    {
+        start_AP("ESP32-AP", "12345678");
+    }
+    else if (args.startsWith("connect to ")) // Example input: "connect to MySSID MyPassword"
+    {
+        String ssid = args.substring(11, args.indexOf(' ', 11));
+        String password = args.substring(args.indexOf(' ', 11) + 1);
+        connect_to_wifi(1, 5, ssid.c_str(), password.c_str());
+    }
+    else if (args == "scan")
+    {
+        scan_wifi();
+    }
+    else if (args == "location")
+    {
+        scan_wifi();
+
+        // Load stored locations
+        File file = SPIFFS.open("/networks.json", "r");
+        if (!file)
+        {
+            Serial.println("Failed to open file for reading");
+            return;
+        }
+
+        // Read file into a string
+        String content = file.readString();
+        file.close();
+
+        // Parse the string into a JSON document
+        JsonDocument doc;
+        DeserializationError error = deserializeJson(doc, content);
+        if (error)
+        {
+            Serial.print("Failed to parse JSON: ");
+            Serial.println(error.c_str());
+            return;
+        }
+
+        // Extract the JSON object
+        JsonObject root = doc.as<JsonObject>();
+
+        // Find the matching location
+        findMatchingLocation(root);
+        Serial.println(bestMatch.name);
+        Serial.printf("Location: %f, %f, %f\n", bestMatch.location[0], bestMatch.location[1], bestMatch.location[2]);
+    }
+    else
+    {
+        Serial.println("{\"error\":\"invalid_wifi_command\"}");
+        return;
+    }
+    Serial.println("{\"status\":\"ok\"}");
+}
+
+// UWB command handler
+void cmd_uwb(const String &args)
+{
+    if (args == "start")
+    {
+        Serial.println("Starting UWB...");
+        UWB_start();
+    }
+    else if (args == "stop")
+    {
+        Serial.println("Stopping UWB...");
+        UWB_stop();
+    }
+    else if (args == "status")
+    {
+        Serial.println("UWB status: ...");
+        if (isRanging)
+        {
+            Serial.println("Ranging is active");
+        }
+        if (isAnchor)
+        {
+            Serial.println("Device is in anchor mode");
+        }
+        else
+        {
+            Serial.println("Device is in tag mode");
+        }
+        Serial.print("Distance: ");
+        Serial.println(distance);
+    }
+    else if (args == "switch mode")
+    {
+        Serial.println("Switching UWB mode...");
+        UWB_switchMode();
     }
 }
