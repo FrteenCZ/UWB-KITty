@@ -1,10 +1,6 @@
 #include "serial_control.h"
 
-bool is2D = false;    // Default assumption
-bool modeSet = false; // Flag to lock mode after first input
-std::unordered_map<std::string, trilateration> vDevices;
-
-// trilateration trilat;
+trilateration trilat;
 
 using CommandFn = void (*)(const String &args);
 
@@ -19,7 +15,6 @@ void cmd_help(const String &args);
 void cmd_ping(const String &args);
 void cmd_status_LED(const String &args);
 void cmd_points(const String &args);
-void cmd_change_role(const String &args);
 void cmd_wifi(const String &args);
 void cmd_uwb(const String &args);
 
@@ -28,7 +23,6 @@ Command commands[] = {
     {"ping", cmd_ping, "ping → check connection"},
     {"LED", cmd_status_LED, "LED <red|green|blue|off> → control onboard LED"},
     {"points", cmd_points, "points <json> → process trilateration points"},
-    {"change_role", cmd_change_role, "change_role <json> → change device role"},
     {"wifi", cmd_wifi, "wifi <auto|AP|connect to SSID PASSWORD|scan|location> → WiFi control"},
     {"UWB", cmd_uwb, "UWB <start|stop|status|switch mode> → UWB control"},
 };
@@ -128,35 +122,18 @@ void cmd_points(const String &args)
         return;
     }
 
-    // Extract device name
-    String devName = doc["device"] | "default";
-    std::string devNameStd = std::string(devName.c_str());
-
-    // Create device if not exists
-    if (vDevices.find(devNameStd) == vDevices.end())
-    {
-        vDevices[devNameStd] = trilateration();
-        Serial.printf("Created new virtual device: %s\n", devName.c_str());
-    }
-
-    trilateration &trilat = vDevices[devNameStd];
-
     // Get points array
     JsonArray arr = doc["distances"].as<JsonArray>();
     int count = arr.size();
-    int numOfDimensions = is2D ? 2 : 3;
+    int numOfDimensions = 3; // Assuming 3D by default
 
     Matrix cords(count, numOfDimensions);
     Matrix distances(count, 1);
 
     // Dimension check
-    if (is2D && arr[0]["location"].size() == 3)
+    if (arr[0]["location"].size() != 3)
     {
-        Serial.println("Warning: Input is 3D but mode is set to 2D. Ignoring z-coordinate.");
-    }
-    else if (!is2D && arr[0]["location"].size() == 2)
-    {
-        Serial.println("Warning: Input is 2D but mode is set to 3D. Providing default z=0.");
+        Serial.println("{\"error\":\"invalid_dimensions\"}");
     }
 
     // Parse array
@@ -166,22 +143,13 @@ void cmd_points(const String &args)
         DataPoint p;
         p.x = obj["location"]["x"].as<float>();
         p.y = obj["location"]["y"].as<float>();
-        p.z = obj["location"]["z"].is<float>() ? obj["location"]["z"].as<float>() : 0;
+        p.z = obj["location"]["z"].as<float>();
         p.d = obj["distance"].as<float>();
 
-        if (is2D)
-        {
-            cords[i][0] = p.x;
-            cords[i][1] = p.y;
-            distances[i][0] = p.d;
-        }
-        else
-        {
-            cords[i][0] = p.x;
-            cords[i][1] = p.y;
-            cords[i][2] = p.z;
-            distances[i][0] = p.d;
-        }
+        cords[i][0] = p.x;
+        cords[i][1] = p.y;
+        cords[i][2] = p.z;
+        distances[i][0] = p.d;
     }
 
     // Update correct trilateration instance
@@ -190,40 +158,14 @@ void cmd_points(const String &args)
     // Print output
     Serial.printf(
         "data: "
-        "{\"device\": \"%s\", "
-        "\"null_space\": %s, "
+        "{\"null_space\": %s, "
         "\"alpha\": %.6f, "
         "\"trilateration\": %s, "
         "\"kalman\": %s}\n",
-        devName,
         trilat.null_space.transpose().toString().c_str(),
         trilat.alpha,
         trilat.trilatSolution.toString().c_str(),
         trilat.getState().transpose().toString().c_str());
-}
-
-// Change device role
-void cmd_change_role(const String &args)
-{
-    StaticJsonDocument<256> doc;
-    DeserializationError err = deserializeJson(doc, args);
-
-    if (err)
-    {
-        Serial.println("{\"error\":\"invalid_json\"}");
-        return;
-    }
-
-    // Extract device name
-    String devName = doc["device"] | "default";
-    std::string devNameStd = std::string(devName.c_str());
-
-    // Delete device if not exists
-    if (vDevices.find(devNameStd) == vDevices.end())
-    {
-        vDevices[devNameStd] = trilateration();
-        Serial.printf("Created new virtual device: %s\n", devName.c_str());
-    }
 }
 
 // WiFi command handler
@@ -325,4 +267,10 @@ void cmd_uwb(const String &args)
         Serial.println("Switching UWB mode...");
         UWB_switchMode();
     }
+    else
+    {
+        Serial.println("{\"error\":\"invalid_uwb_command\"}");
+        return;
+    }
+    Serial.println("{\"status\":\"ok\"}");
 }
