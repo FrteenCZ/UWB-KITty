@@ -30,12 +30,12 @@ public:
     float alpha;
 
     Matrix kalmanState;
+    KalmanFilter kf;               // Kalman filter object
 
 private:
     int numOfDimensions;           // Number of dimensions (2D or 3D)
     int bufferIndex = 0;           // Points to the next insertion position
     int count = 0;                 // Number of data points in the buffer
-    KalmanFilter kf;               // Kalman filter object
     DataPoint buffer[BUFFER_SIZE]; // Circular buffer for storing data points
 };
 
