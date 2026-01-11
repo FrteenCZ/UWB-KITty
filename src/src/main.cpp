@@ -5,6 +5,7 @@
 #include "UWB_tracking_logic/trilateration.h"
 #include <WebServer.h>
 #include "utils/StatusLED.h"
+#include "utils/Button.h"
 
 // Define the global server instance
 WebServer server(80);
@@ -21,16 +22,22 @@ void setup()
 {
     Serial.begin(115200);
     
-    UWB_setup();
     StatusLED_setup();
+    UWB_setup();
+    Button_setup();
+    Serial.println("Setup complete.");
 
-    pinMode(BUTTON_PIN, INPUT_PULLUP);
+
+    StatusLED_setColor(50, 0, 50);
 }
 
 void loop()
 {
     // Handle serial input
     serialTask();
+
+    // Update button state
+    Button_update();
 
     // UWB processing
     UWB_loop();
