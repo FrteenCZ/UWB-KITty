@@ -28,7 +28,7 @@ void setup()
     Serial.println("Setup complete.");
 
 
-    StatusLED_setColor(50, 0, 50);
+    // StatusLED_setColor(50, 0, 50);
 }
 
 void loop()

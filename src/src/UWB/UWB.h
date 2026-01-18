@@ -9,6 +9,7 @@
 #include <Preferences.h>
 
 #include "config.h"
+#include "../utils/StatusLED.h"
 
 extern WebServer server;
 extern Preferences preferences;

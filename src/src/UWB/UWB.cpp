@@ -1,17 +1,5 @@
 #include "UWB.h"
 
-#ifdef ANCHORMODE
-bool isAnchor = true;
-#else
-bool isAnchor = false;
-#endif
-
-#ifdef STARTRANGING
-bool isRanging = true;
-#else
-bool isRanging = false;
-#endif
-
 const int measurementBufferSize = 10;
 float measurementBuffer[measurementBufferSize];
 int measurementBufferIndex;
@@ -19,63 +7,8 @@ int measurementBufferIndex;
 float distance = 0.0;
 float avgDistance = 0.0;
 
-// Calibration variables
-bool isCalibrating = false;
-int minDelay;
-int maxDelay;
-int bestDelay = 0;
-float calibrationTarget = 0.0;
-float tolerance = 0.05;
-
-/**
- * @brief Calibrate the UWB module
- *
- * This function calibrates the UWB module by adjusting the antenna delay based on the measured distance.
- */
-void calibrate()
-{
-    if (abs(calibrationTarget - distance) < tolerance)
-    {
-        Serial.print("Calibration successful");
-        Serial.print(" (delay: ");
-        Serial.print(bestDelay);
-        Serial.println(")");
-        isCalibrating = false;
-
-        // Save the best delay to preferences
-        preferences.begin("UWB", false);
-        preferences.putInt("antennaDelay", bestDelay);
-        preferences.end();
-        return;
-    }
-
-    if (maxDelay - minDelay <= 1)
-    {
-        Serial.println("Calibration converged (delay range too small)");
-        isCalibrating = false;
-        return;
-    }
-
-    int midDelay = (minDelay + maxDelay) / 2;
-
-    if (avgDistance < calibrationTarget)
-    {
-        Serial.println("Decreasing delay");
-        maxDelay = midDelay;
-        bestDelay = midDelay;
-    }
-    else
-    {
-        Serial.println("Increasing delay");
-        minDelay = midDelay;
-        bestDelay = midDelay;
-    }
-
-    Serial.printf("Current delay: %d, Distance: %.2f, Target: %.2f\n", bestDelay, avgDistance, calibrationTarget);
-    Serial.printf("Min delay: %d, Max delay: %d\n", minDelay, maxDelay);
-
-    // DW1000.setAntennaDelay(bestDelay);
-}
+bool isRanging = false;
+bool isAnchor = false;
 
 /**
  * @brief Callback function to be called when a new range is available
@@ -104,14 +37,6 @@ void newRange()
     Serial.print("\t RX power: ");
     Serial.print(DW1000Ranging.getDistantDevice()->getRXPower());
     Serial.println(" dBm");
-
-    if (isCalibrating)
-    {
-        if (measurementBufferIndex == 0)
-        {
-            calibrate();
-        }
-    }
 }
 
 /**
@@ -159,7 +84,8 @@ void startAsTag()
     DW1000Ranging.attachNewRange(newRange);
     DW1000Ranging.attachNewDevice(newDevice);
     DW1000Ranging.attachInactiveDevice(inactiveDevice);
-    DW1000Ranging.startAsTag("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_LONGDATA_RANGE_ACCURACY);
+    DW1000Ranging.startAsTag("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_LONGDATA_RANGE_ACCURACY, false);
+    StatusLED_setColor(0, 50, 0);
 }
 
 /**
@@ -173,124 +99,8 @@ void startAsAnchor()
     DW1000Ranging.attachNewRange(newRange);
     DW1000Ranging.attachBlinkDevice(newBlink);
     DW1000Ranging.attachInactiveDevice(inactiveDevice);
-    DW1000Ranging.startAsAnchor("82:17:5B:D5:A9:9A:E2:9C", DW1000.MODE_LONGDATA_RANGE_ACCURACY);
-}
-
-/**
- * @brief Handle the UWB root path
- *
- * This function serves the UWB HTML page when the root path is accessed.
- */
-void handleUwbRoot()
-{
-    File file = SPIFFS.open("/UWB.html", "r");
-    if (!file)
-    {
-        server.send(500, "text/plain", "Failed to open file");
-        return;
-    }
-    String html = file.readString();
-    file.close();
-    server.send(200, "text/html", html);
-}
-
-/**
- * @brief Handle the UWB start ranging request
- *
- * This function starts the UWB ranging process when the corresponding endpoint is accessed.
- */
-void handleUwbStartRanging()
-{
-    UWB_start();
-
-    server.send(200, "text/plain", "Ranging started");
-}
-
-/**
- * @brief Handle the UWB stop ranging request
- *
- * This function stops the UWB ranging process when the corresponding endpoint is accessed.
- */
-void handleUwbStopRanging()
-{
-    UWB_stop();
-
-    server.send(200, "text/plain", "Ranging stopped");
-}
-
-/**
- * @brief Handle the UWB switch mode request
- *
- * This function switches the UWB module mode between tag and anchor when the corresponding endpoint is accessed.
- */
-void handleUwbSwitchMode()
-{
-    Serial.println("Switching mode...");
-    UWB_switchMode();
-    server.send(200, "text/plain", "Mode switched");
-}
-
-/**
- * @brief Handle the UWB status request
- *
- * This function returns the current status of the UWB module as a JSON response.
- */
-void handleUwbStatus()
-{
-    StaticJsonDocument<256> status;
-
-    status["isRanging"] = isRanging;
-    status["isAnchor"] = isAnchor;
-    status["distance"] = avgDistance;
-    status["RXPower"] = DW1000Ranging.getDistantDevice()->getRXPower();
-
-    // String shortAddr = String(DW1000Ranging.getCurrentShortAddress(), HEX);
-    // shortAddr.toUpperCase();
-    // status["deviceAddress"] = shortAddr;
-
-    String otherAddr = String(DW1000Ranging.getDistantDevice()->getShortAddress(), HEX);
-    otherAddr.toUpperCase();
-    status["otherDeviceAddress"] = otherAddr;
-
-    String json;
-    serializeJson(status, json);
-    server.send(200, "application/json", json);
-}
-
-/**
- * @brief Handle the UWB calibration request
- *
- * This function starts the UWB calibration process when the corresponding endpoint is accessed.
- */
-void handleUwbCalibrate()
-{
-    if (!server.hasArg("value"))
-    {
-        server.send(400, "text/plain", "Missing 'value' parameter");
-        return;
-    }
-
-    if (isAnchor)
-    {
-        server.send(400, "text/plain", "Calibration is only available in tag mode");
-        return;
-    }
-
-    float newTarget = server.arg("value").toFloat();
-    if (newTarget <= 0)
-    {
-        server.send(400, "text/plain", "Invalid distance");
-        return;
-    }
-
-    minDelay = 15600;
-    maxDelay = 17500;
-    bestDelay = 0;
-
-    calibrationTarget = newTarget;
-    isCalibrating = true;
-
-    server.send(200, "text/plain", "Calibration started with target: " + String(calibrationTarget));
+    DW1000Ranging.startAsAnchor("82:17:5B:D5:A9:9A:E2:9C", DW1000.MODE_LONGDATA_RANGE_ACCURACY, false);
+    StatusLED_setColor(0, 0, 50);
 }
 
 /**
@@ -304,13 +114,26 @@ void UWB_setup()
     preferences.begin("UWB", true);
     isRanging = preferences.getBool("isRanging", false);
     isAnchor = preferences.getBool("isAnchor", false);
-    bestDelay = preferences.getInt("antennaDelay", DEFAULT_ANTENNA_DELAY);
     preferences.end();
 
-    SPI.begin(UWB_PIN_SPI_SCK, UWB_PIN_SPI_MISO, UWB_PIN_SPI_MOSI); // SCK, MISO, MOSI
+    // Initialize measurement buffer
+    for (int i = 0; i < measurementBufferSize; i++)
+    {
+        measurementBuffer[i] = 0.0;
+    }
+    measurementBufferIndex = 0;
+
+    SPI.begin(UWB_PIN_SPI_SCK, UWB_PIN_SPI_MISO, UWB_PIN_SPI_MOSI);
 
     // init the configuration
-    DW1000Ranging.initCommunication(UWB_PIN_SPI_RST, UWB_PIN_SPI_SS, UWB_PIN_SPI_IRQ); // Reset, CS, IRQ pin
+    DW1000Ranging.initCommunication(UWB_PIN_SPI_RST, UWB_PIN_SPI_SS, UWB_PIN_SPI_IRQ);
+    
+    // Wait for DW1000 to stabilize
+    delay(100);
+    
+    // Enable range filter to smooth noisy measurements
+    DW1000Ranging.useRangeFilter(true);
+    DW1000Ranging.setRangeFilterValue(15);  // Exponential moving average, 15 samples
 
     if (isRanging)
     {
@@ -323,24 +146,12 @@ void UWB_setup()
             startAsTag();
         }
     }
-
-    // dont ask me how, but this works :)
-    delay(1000);
-    UWB_switchMode();
-    delay(1000);
-    UWB_switchMode();
-
-    // Set the antenna delay
-    DW1000.setAntennaDelay(17000);
-
-    // Setup web server routes
-    server.on("/UWB.html", handleUwbRoot);
-    server.on("/UWB", handleUwbRoot);
-    server.on("/UWB/startRanging", handleUwbStartRanging);
-    server.on("/UWB/stopRanging", handleUwbStopRanging);
-    server.on("/UWB/switchMode", handleUwbSwitchMode);
-    server.on("/UWB/status", handleUwbStatus);
-    server.on("/UWB/calibrate", handleUwbCalibrate);
+    
+    // Wait for ranging to settle
+    delay(500);
+    
+    // Set antenna delay AFTER starting ranging
+    DW1000.setAntennaDelay(16384);
 }
 
 /**
@@ -370,6 +181,8 @@ void UWB_switchMode()
 
     // Re-init SPI communication
     DW1000Ranging.initCommunication(UWB_PIN_SPI_RST, UWB_PIN_SPI_SS, UWB_PIN_SPI_IRQ);
+    
+    delay(100);
 
     if (isAnchor)
     {
@@ -390,9 +203,12 @@ void UWB_switchMode()
         startAsAnchor();
     }
 
-    Serial.print("Antenna delay: ");
-    Serial.println(bestDelay);
-    // DW1000.setAntennaDelay(bestDelay);
+    delay(500);
+    DW1000.setAntennaDelay(16384);
+    
+    // Enable range filter
+    DW1000Ranging.useRangeFilter(true);
+    DW1000Ranging.setRangeFilterValue(15);
 }
 
 void UWB_start()
@@ -420,4 +236,5 @@ void UWB_stop()
     preferences.begin("UWB", false);
     preferences.putBool("isRanging", isRanging);
     preferences.end();
+    StatusLED_setColor(50, 0, 0);
 }

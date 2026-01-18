@@ -24,7 +24,7 @@ Command commands[] = {
     {"LED", cmd_status_LED, "LED <red|green|blue|off> → control onboard LED"},
     {"points", cmd_points, "points <json> → process trilateration points"},
     {"wifi", cmd_wifi, "wifi <auto|AP|connect to SSID PASSWORD|scan|location> → WiFi control"},
-    {"UWB", cmd_uwb, "UWB <start|stop|status|switch mode> → UWB control"},
+    {"UWB", cmd_uwb, "UWB <start|stop|status|switch> → UWB control"},
 };
 const size_t COMMAND_COUNT = sizeof(commands) / sizeof(commands[0]);
 
@@ -262,7 +262,7 @@ void cmd_uwb(const String &args)
         Serial.print("Distance: ");
         Serial.println(distance);
     }
-    else if (args == "switch mode")
+    else if (args == "switch")
     {
         Serial.println("Switching UWB mode...");
         UWB_switchMode();
