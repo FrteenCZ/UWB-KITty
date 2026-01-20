@@ -1,6 +1,6 @@
 import bpy  # type: ignore
 from ..utils.ESPcom import SerialThread
-from ..comunication_protocol.protocol import parse_packet
+from ..comunication_protocol.parse import parse_packet
 
 
 class SERIAL_OT_StartESP(bpy.types.Operator):

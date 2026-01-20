@@ -1,9 +1,10 @@
-from . import draw_toggle, draw_distances_toggle, comunication
+from . import draw_toggle, draw_distances_toggle, serial_modal, serial_stop
 
 modules = [
     draw_toggle,
     draw_distances_toggle,
-    comunication,
+    serial_modal,
+    serial_stop,
 ]
 
 
