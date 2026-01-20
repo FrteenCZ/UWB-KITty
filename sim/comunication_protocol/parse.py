@@ -1,8 +1,10 @@
 import json
 from typing import Callable, Dict, List
+from ..devices.device import Device
+from ..devices.manager import manager
 
 # Define command handler type
-CommandFn = Callable[[str], None]
+CommandFn = Callable[[str, Device], None]
 
 
 class Command:
@@ -11,27 +13,36 @@ class Command:
         self.fn = fn
 
 
-def cmd_trilateration(args: str) -> None:
+def cmd_trilateration(args: str, device: Device) -> None:
     """Handle trilateration command"""
+    if not device:
+        return
+
     try:
         data = json.loads(args)
-        null_space = data.get("null_space", [])
-        alpha = data.get("alpha", 0.0)
-        trilateration = data.get("trilateration", [])
-        kalman = data.get("kalman", [])
-        # You need to store these values in device
-
     except json.JSONDecodeError:
         print(json.dumps({"error": "invalid_json"}))
+
+    device.null_space = data.get("null_space", [])
+    device.alpha = data.get("alpha", 0.0)
+    device.trilateration = data.get("trilateration", [])
+    device.kalman = data.get("kalman", [])
+
+
+
+def cmd_manager(args: str, device: Device) -> None:
+    """Reroute to specific device using manager"""
+    manager(args)
 
 
 # Command registry
 COMMANDS: List[Command] = [
     Command("data", cmd_trilateration),
+    Command("manager", cmd_manager),
 ]
 
 
-def parse_packet(data: str) -> None:
+def parse_packet(data: str, device: Device = None) -> None:
     """Parse and execute a command"""
     parts = data.strip().split(None, 1)  # Split on first whitespace
     if not parts:
@@ -43,7 +54,7 @@ def parse_packet(data: str) -> None:
     # Find and execute command
     for command in COMMANDS:
         if command.name.lower() == cmd:
-            command.fn(args)
+            command.fn(args, device)
             return
 
     # Command not found
