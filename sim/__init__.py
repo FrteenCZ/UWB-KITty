@@ -1,5 +1,5 @@
 from . import operators, ui
-# from .utils import ESPcom
+from .utils import objectProperties
 
 bl_info = {
     "name": "UWB-KITty",
@@ -10,6 +10,7 @@ bl_info = {
 modules = [
     operators,
     ui,
+    objectProperties
 ]
 
 
