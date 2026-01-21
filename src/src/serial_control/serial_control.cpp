@@ -47,16 +47,20 @@ void handleCommand(const String &line)
     Serial.println("Type 'help' for a list of available commands.");
 }
 
-String inputLine;
+String buffer;
+
 void serialTask()
 {
     while (Serial.available())
     {
-        String inputLine = Serial.readStringUntil('\n');
-        inputLine.trim();
-        if (inputLine.length() > 0)
+        char c = Serial.read();
+        buffer += c;
+
+        if (c == '\n')
         {
-            handleCommand(inputLine);
+            buffer.trim();
+            handleCommand(buffer);
+            buffer = "";
         }
     }
 }
@@ -113,7 +117,7 @@ void cmd_status_LED(const String &args)
 // Process trilateration points
 void cmd_points(const String &args)
 {
-    StaticJsonDocument<256> doc;
+    JsonDocument doc;
     DeserializationError err = deserializeJson(doc, args);
 
     if (err)

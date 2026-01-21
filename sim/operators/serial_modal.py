@@ -1,6 +1,6 @@
 import bpy  # type: ignore
 from ..utils.ESPcom import SerialThread
-from ..comunication_protocol.parse import parse_packet
+from ..devices.manager import manager as DeviceManager
 
 
 class SERIAL_OT_StartESP(bpy.types.Operator):
@@ -18,7 +18,6 @@ class SERIAL_OT_StartESP(bpy.types.Operator):
             return {'CANCELLED'}
 
         SERIAL_OT_StartESP._thread = SerialThread(
-            process_latest_line=parse_packet,
             port=port,
             baudrate=115200)
         SERIAL_OT_StartESP._thread.start()

@@ -3,8 +3,6 @@ import serial.tools.list_ports
 from ..operators.serial_modal import SERIAL_OT_StartESP
 
 # Panel for toggling object tracking in the 3D View
-
-
 class VIEW3D_PT_tracking_panel(bpy.types.Panel):
     bl_label = "Object Tracker"
     bl_space_type = 'VIEW_3D'
@@ -80,6 +78,39 @@ class SERIAL_PT_ObjectPanel(bpy.types.Panel):
         if obj:
             layout.prop(obj.serial_props, "role", expand=True)
 
+# Run manager update panel
+class VIEW3D_PT_manager_panel(bpy.types.Panel):
+    bl_label = "Update control"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'UWB-KITty'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator("wm.update_manager", text="Update Manager")
+
+# Send distances panel    
+class VIEW3D_PT_distance_sender_panel(bpy.types.Panel):
+    bl_label = "Distance Sender"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'UWB-KITty'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator("wm.send_distances", text="Send Distances")
+
+# Add device 
+class VIEW3D_PT_add_device_panel(bpy.types.Panel):
+    bl_label = "Add Device"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'UWB-KITty'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator("wm.add_device", text="Add Device")
+
 
 def register():
     bpy.utils.register_class(VIEW3D_PT_tracking_panel)
@@ -89,6 +120,10 @@ def register():
     bpy.utils.register_class(SERIAL_PT_ObjectPanel)
     bpy.types.Scene.serial_props = bpy.props.PointerProperty(
         type=SerialProperties)
+    bpy.utils.register_class(VIEW3D_PT_manager_panel)
+    bpy.utils.register_class(VIEW3D_PT_distance_sender_panel)
+    bpy.utils.register_class(VIEW3D_PT_add_device_panel)
+
 
 
 def unregister():
@@ -98,3 +133,7 @@ def unregister():
     bpy.utils.unregister_class(SerialProperties)
     bpy.utils.unregister_class(SERIAL_PT_ObjectPanel)
     del bpy.types.Scene.serial_props
+    bpy.utils.unregister_class(VIEW3D_PT_manager_panel)
+    bpy.utils.unregister_class(VIEW3D_PT_distance_sender_panel)
+    bpy.utils.unregister_class(VIEW3D_PT_add_device_panel)
+

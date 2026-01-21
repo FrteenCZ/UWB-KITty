@@ -1,3 +1,4 @@
+import cmd
 from typing import Callable
 from threading import Thread, Event
 import time
@@ -16,7 +17,6 @@ except ImportError:
 class SerialThread(Thread):
     def __init__(
         self,
-        process_latest_line: Callable[[str], None] = print,
         port: str = "/dev/ttyUSB0",
         baudrate: int = 115200,
         print_all: bool = True,
@@ -26,7 +26,8 @@ class SerialThread(Thread):
         self.stop_event = Event()
         self.latest_line = ""
         self.print_all = print_all
-        self.process_latest_line = process_latest_line
+
+        self._rx_queue = []
 
     def run(self):
         try:
@@ -35,13 +36,8 @@ class SerialThread(Thread):
                 if not line:
                     continue
 
-                decoded = line.decode(errors="replace").strip()
-                self.latest_line = decoded
+                self._rx_queue.append(line)
 
-                if self.print_all:
-                    print(f"[ESP] {decoded}")
-
-                self.process_latest_line(decoded)
         finally:
             self.ser.close()
 
@@ -58,4 +54,12 @@ class SerialThread(Thread):
         if not silent:
             print(f"Sending command: {cmd}")
 
-        self.ser.write((cmd + "\n").encode())
+        for i in range(0, len(cmd), 64):
+            self.ser.write(cmd[i:i+64])
+            time.sleep(0.001) # brief pause to allow buffer to clear
+        self.ser.flush()
+
+    def read_messages(self):
+        msgs = self._rx_queue
+        self._rx_queue = []
+        return msgs
