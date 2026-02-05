@@ -1,49 +1,80 @@
 import bpy  # type: ignore
-from ..devices.manager import manager as DeviceManager
+from ..globals import device_manager
 from .serial_modal import SERIAL_OT_StartESP
 from ..devices.device import Device
+from . import tick_modal
 
 
-class VIEW3D_PT_manager_panel(bpy.types.Operator):
-    """Run DeviceManager update"""
-    bl_idname = "wm.update_manager"
-    bl_label = "Update DeviceManager"
+class AddDeviceProperties(bpy.types.PropertyGroup):
+    device_id: bpy.props.StringProperty(name="Device ID")  # type: ignore
+    blender_object: bpy.props.PointerProperty(
+        name="Blender Object",
+        type=bpy.types.Object,
+    )  # type: ignore
+    role: bpy.props.EnumProperty(
+        name="Role",
+        items=[
+            ("TAG", "Tag", "A device that is being tracked"),
+            ("ANCHOR", "Anchor", "A fixed device used for reference"),
+            ("NONE", "None", "No specific role"),
+        ],
+    )  # type: ignore
 
-    def execute(self, context):
-        DeviceManager.update()
-        self.report({'INFO'}, "DeviceManager updated")
-        return {'FINISHED'}
 
-class VIEW3D_PT_distance_sender_panel(bpy.types.Operator):
-    """Send distances to ESP devices"""
-    bl_idname = "wm.send_distances"
-    bl_label = "Send Distances"
-
-    def execute(self, context):
-        targets = bpy.data.collections.get("DistanceTargets").objects
-        DeviceManager.devices.get("default").send_distances(targets)
-        self.report({'INFO'}, "Distances sent")
-        return {'FINISHED'}
-
-class VIEW3D_PT_add_device_panel(bpy.types.Operator):
+class WM_OT_add_device(bpy.types.Operator):
     """Add a new device to DeviceManager"""
     bl_idname = "wm.add_device"
     bl_label = "Add Device"
 
+    def draw(self, context):
+        layout = self.layout
+        props = context.window_manager.add_device_props
+        layout.prop(props, "device_id")
+        layout.prop(props, "blender_object")
+        layout.prop(props, "role")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=400)
+
     def execute(self, context):
-        obj = bpy.data.objects.get("Cube")
-        device = Device(device_id="default", blender_object=obj, role="TAG")
-        DeviceManager.add_device(device=device, port=SERIAL_OT_StartESP._thread)
-        self.report({'INFO'}, "Device added")
+        props = context.window_manager.add_device_props
+        if not props.device_id:
+            self.report({'ERROR'}, "Device ID cannot be empty.")
+            return {'CANCELLED'}
+
+        if props.blender_object is None:
+            self.report({'ERROR'}, "Blender Object must be selected.")
+            return {'CANCELLED'}
+
+        device = Device(
+            device_id=props.device_id,
+            blender_object=props.blender_object,
+            role=props.role,
+        )
+
+        if not SERIAL_OT_StartESP._thread or not SERIAL_OT_StartESP._thread.is_alive():
+            self.report(
+                {'ERROR'}, "Serial port not running. Please start it first.")
+            return {'CANCELLED'}
+
+        device_manager.add_device(
+            device=device, port=SERIAL_OT_StartESP._thread)
+
+        if tick_modal._timer_handle is None:
+            bpy.ops.wm.tick_start()
+
+        self.report({'INFO'}, f"Device '{props.device_id}' added.")
         return {'FINISHED'}
 
+
 def register():
-    bpy.utils.register_class(VIEW3D_PT_manager_panel)
-    bpy.utils.register_class(VIEW3D_PT_distance_sender_panel)
-    bpy.utils.register_class(VIEW3D_PT_add_device_panel)
+    bpy.utils.register_class(AddDeviceProperties)
+    bpy.types.WindowManager.add_device_props = bpy.props.PointerProperty(
+        type=AddDeviceProperties)
+    bpy.utils.register_class(WM_OT_add_device)
 
 
 def unregister():
-    bpy.utils.unregister_class(VIEW3D_PT_manager_panel)
-    bpy.utils.unregister_class(VIEW3D_PT_distance_sender_panel)
-    bpy.utils.unregister_class(VIEW3D_PT_add_device_panel)
+    bpy.utils.unregister_class(WM_OT_add_device)
+    del bpy.types.WindowManager.add_device_props
+    bpy.utils.unregister_class(AddDeviceProperties)

@@ -1,4 +1,4 @@
-from . import draw_toggle, draw_distances_toggle, serial_modal, serial_stop, manager_modal
+from . import draw_toggle, draw_distances_toggle, serial_modal, serial_stop, manager_modal, tick_modal
 
 modules = [
     draw_toggle,
@@ -6,6 +6,7 @@ modules = [
     serial_modal,
     serial_stop,
     manager_modal,
+    tick_modal,
 ]
 
 
