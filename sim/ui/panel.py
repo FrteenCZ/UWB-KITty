@@ -30,6 +30,38 @@ class VIEW3D_PT_device_manager_panel(bpy.types.Panel):
         col.operator("wm.add_device", icon='ADD', text="")
         col.operator("wm.remove_device", icon='REMOVE', text="").index = scene.uwb_kitty_props.active_device_index
 
+class OBJECT_PT_uwb_device_panel(bpy.types.Panel):
+    bl_label = "UWB Device"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "object"
+
+    @classmethod
+    def poll(cls, context):
+        # Only show the panel if the active object is a UWB device
+        active_obj = context.active_object
+        if not active_obj:
+            return False
+        
+        for device in context.scene.uwb_kitty_props.devices:
+            if device.blender_object_name == active_obj.name:
+                return True
+        return False
+
+    def draw(self, context):
+        layout = self.layout
+        active_obj = context.active_object
+        
+        # Find the corresponding device property
+        device_prop = None
+        for device in context.scene.uwb_kitty_props.devices:
+            if device.blender_object_name == active_obj.name:
+                device_prop = device
+                break
+        
+        if device_prop:
+            layout.prop(device_prop, "id", text="Device ID")
+            layout.prop(device_prop, "role")
 
 def get_serial_devices(self, context):
     ports = serial.tools.list_ports.comports()
@@ -70,13 +102,15 @@ class VIEW3D_PT_comunication_panel(bpy.types.Panel):
 def register():
     bpy.utils.register_class(UWB_UL_device_list)
     bpy.utils.register_class(VIEW3D_PT_device_manager_panel)
+    bpy.utils.register_class(OBJECT_PT_uwb_device_panel)
     bpy.utils.register_class(SerialProperties) # Register SerialProperties
     bpy.types.Scene.serial_props = bpy.props.PointerProperty(type=SerialProperties) # Attach to Scene
     bpy.utils.register_class(VIEW3D_PT_comunication_panel)
 
 def unregister():
     bpy.utils.unregister_class(VIEW3D_PT_comunication_panel)
+    bpy.utils.unregister_class(SerialProperties) # Unregister SerialProperties
+    del bpy.types.Scene.serial_props # Unregister from Scene
+    bpy.utils.unregister_class(OBJECT_PT_uwb_device_panel)
     bpy.utils.unregister_class(VIEW3D_PT_device_manager_panel)
     bpy.utils.unregister_class(UWB_UL_device_list)
-    del bpy.types.Scene.serial_props # Unregister from Scene
-    bpy.utils.unregister_class(SerialProperties) # Unregister SerialProperties
