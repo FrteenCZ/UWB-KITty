@@ -63,7 +63,7 @@ class DeviceManager:
 
         # 4. Send distances periodically
         current_time = time.time()
-        if current_time - self._last_send_time >= 0.01:
+        if current_time - self._last_send_time >= 1/6:
             self._send_distances()
             self._last_send_time = current_time
 
@@ -96,7 +96,7 @@ class DeviceManager:
         port = self.serial_links.get(msg.sender)
         if port:
             raw = Protocol.encode(msg)
-            port.send_command(raw, False)
+            port.send_command(raw, True)
 
     def handle_system_message(self, msg):
         print("System message:", msg.type)

@@ -25,7 +25,6 @@ class Protocol:
     @staticmethod
     def decode(raw: bytes) -> Message:
         """Parse and execute a command"""
-        print(f"Raw message to decode: {raw.strip()}")
         # try:
         #     data = json.loads(raw)
         #     return Message(

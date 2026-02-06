@@ -26,17 +26,18 @@ class Device:
 
     def on_message(self, message: Message):
         try:
-            print(f"Device {self.id} received message: {message.type} {message.payload}")
             if message.type == "data:":
                 self.null_space = message.payload.get("null_space")
                 self.alpha = message.payload.get("alpha")
                 self.trilateration = message.payload.get("trilateration")[0]
                 self.kalman = message.payload.get("kalman")[0]
                 self.last_data_update = time.time()
+
             elif message.type == "PING":
                 self._outbox.append(
                     Message(type="PONG", sender=self.id, target="esp")
                 )
+
         except Exception as e:
             print(f"Error processing message for device {self.id}: {e}")
 
@@ -57,9 +58,10 @@ class Device:
                     self.kalman[1] + self.vel[1] * dt,
                     self.kalman[2] + self.vel[2] * dt,
                 ]
-        
+
         # Update the scene
-        self.visualizer.update()
+        if self.role == "TAG":
+            self.visualizer.update()
 
     def send_distances(self, targets=[]):
         if not self.obj or not targets:
