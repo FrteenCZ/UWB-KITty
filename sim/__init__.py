@@ -1,4 +1,4 @@
-from . import operators, ui
+from . import operators, ui, properties
 from .utils import objectProperties
 
 bl_info = {
@@ -10,7 +10,8 @@ bl_info = {
 modules = [
     operators,
     ui,
-    objectProperties
+    objectProperties,
+    properties,
 ]
 
 

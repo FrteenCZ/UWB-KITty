@@ -1,6 +1,5 @@
-import bpy  # type: ignore
+import bpy # type: ignore
 from ..utils.ESPcom import SerialThread
-from ..globals import device_manager
 
 
 class SERIAL_OT_StartESP(bpy.types.Operator):

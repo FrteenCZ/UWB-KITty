@@ -1,80 +1,84 @@
-import bpy  # type: ignore
+import bpy # type: ignore
 from ..globals import device_manager
-from .serial_modal import SERIAL_OT_StartESP
-from ..devices.device import Device
 from . import tick_modal
 
 
-class AddDeviceProperties(bpy.types.PropertyGroup):
-    device_id: bpy.props.StringProperty(name="Device ID")  # type: ignore
-    blender_object: bpy.props.PointerProperty(
-        name="Blender Object",
-        type=bpy.types.Object,
-    )  # type: ignore
-    role: bpy.props.EnumProperty(
-        name="Role",
-        items=[
-            ("TAG", "Tag", "A device that is being tracked"),
-            ("ANCHOR", "Anchor", "A fixed device used for reference"),
-            ("NONE", "None", "No specific role"),
-        ],
-    )  # type: ignore
-
-
 class WM_OT_add_device(bpy.types.Operator):
-    """Add a new device to DeviceManager"""
+    """Add a new device to the persistent list"""
     bl_idname = "wm.add_device"
     bl_label = "Add Device"
 
     def draw(self, context):
         layout = self.layout
-        props = context.window_manager.add_device_props
+        props = context.scene.uwb_kitty_props.add_device_props
         layout.prop(props, "device_id")
         layout.prop(props, "blender_object")
         layout.prop(props, "role")
 
     def invoke(self, context, event):
+        # Pre-fill with active object if available
+        add_props = context.scene.uwb_kitty_props.add_device_props
+        active_obj = context.active_object
+        if active_obj:
+            add_props.blender_object = active_obj
+            add_props.device_id = active_obj.name
+        
         return context.window_manager.invoke_props_dialog(self, width=400)
 
     def execute(self, context):
-        props = context.window_manager.add_device_props
-        if not props.device_id:
+        scene_props = context.scene.uwb_kitty_props
+        add_props = scene_props.add_device_props
+
+        if not add_props.device_id:
             self.report({'ERROR'}, "Device ID cannot be empty.")
             return {'CANCELLED'}
-
-        if props.blender_object is None:
+        
+        if not add_props.blender_object:
             self.report({'ERROR'}, "Blender Object must be selected.")
             return {'CANCELLED'}
 
-        device = Device(
-            device_id=props.device_id,
-            blender_object=props.blender_object,
-            role=props.role,
-        )
+        # Add the new device to the persistent collection
+        new_device_prop = scene_props.devices.add()
+        new_device_prop.id = add_props.device_id
+        new_device_prop.blender_object_name = add_props.blender_object.name
+        new_device_prop.role = add_props.role
 
-        if not SERIAL_OT_StartESP._thread or not SERIAL_OT_StartESP._thread.is_alive():
-            self.report(
-                {'ERROR'}, "Serial port not running. Please start it first.")
-            return {'CANCELLED'}
+        # Clear the dialog properties for the next use
+        add_props.device_id = ""
+        add_props.blender_object = None
+        
+        # Reload devices in the manager if it's running
+        if tick_modal._timer_handle is not None:
+             device_manager.load_devices_from_properties(context)
 
-        device_manager.add_device(
-            device=device, port=SERIAL_OT_StartESP._thread)
+        self.report({'INFO'}, f"Device '{new_device_prop.id}' added to list.")
+        return {'FINISHED'}
 
-        if tick_modal._timer_handle is None:
-            bpy.ops.wm.tick_start()
 
-        self.report({'INFO'}, f"Device '{props.device_id}' added.")
+class WM_OT_remove_device(bpy.types.Operator):
+    """Remove a device from the persistent list"""
+    bl_idname = "wm.remove_device"
+    bl_label = "Remove Device"
+
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        scene_props = context.scene.uwb_kitty_props
+        scene_props.devices.remove(self.index)
+        
+        # Reload devices in the manager if it's running
+        if tick_modal._timer_handle is not None:
+             device_manager.load_devices_from_properties(context)
+             
+        self.report({'INFO'}, "Device removed.")
         return {'FINISHED'}
 
 
 def register():
-    bpy.utils.register_class(AddDeviceProperties)
-    bpy.types.WindowManager.add_device_props = bpy.props.PointerProperty(
-        type=AddDeviceProperties)
     bpy.utils.register_class(WM_OT_add_device)
+    bpy.utils.register_class(WM_OT_remove_device)
 
 
 def unregister():
     bpy.utils.unregister_class(WM_OT_add_device)
-    del bpy.types.WindowManager.add_device_props
-    bpy.utils.unregister_class(AddDeviceProperties)
+    bpy.utils.unregister_class(WM_OT_remove_device)

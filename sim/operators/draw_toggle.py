@@ -1,4 +1,4 @@
-import bpy
+import bpy # type: ignore
 from ..draw.coordinates import draw_coordinates
 
 _draw_handle = None

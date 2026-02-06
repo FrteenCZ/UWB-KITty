@@ -1,6 +1,5 @@
-import json
+import bpy # type: ignore
 import time
-import bpy
 from .device import Device
 from ..comunication_protocol.protocol import Protocol
 from ..utils.ESPcom import SerialThread
@@ -9,12 +8,39 @@ from ..utils.ESPcom import SerialThread
 class DeviceManager:
     def __init__(self):
         self.devices: dict[str, Device] = {}
-        self.serial_links: dict[str, SerialThread] = {}  # port → SerialOperator
+        self.serial_links: dict[str, SerialThread] = {}
         self._last_send_time = 0.0
+
+    def load_devices_from_properties(self, context, serial_port):
+        self.clear_devices()
+        scene_props = context.scene.uwb_kitty_props
+        
+        if not serial_port or not serial_port.is_alive():
+            print("Serial port not running. Cannot load devices.")
+            return
+
+        for device_prop in scene_props.devices:
+            blender_obj = bpy.data.objects.get(device_prop.blender_object_name)
+            if not blender_obj:
+                print(f"Object '{device_prop.blender_object_name}' not found for device '{device_prop.id}'. Skipping.")
+                continue
+
+            device = Device(
+                device_id=device_prop.id,
+                blender_object=blender_obj,
+                role=device_prop.role,
+            )
+            self.add_device(device, serial_port)
+        
+        print(f"Loaded {len(self.devices)} devices from properties.")
 
     def add_device(self, device, port):
         self.devices[device.id] = device
         self.serial_links[device.id] = port
+
+    def clear_devices(self):
+        self.devices.clear()
+        self.serial_links.clear()
 
     def update(self):
         # 1. Read incoming messages
@@ -37,7 +63,7 @@ class DeviceManager:
 
         # 4. Send distances periodically
         current_time = time.time()
-        if current_time - self._last_send_time >= 0.4:
+        if current_time - self._last_send_time >= 0.01:
             self._send_distances()
             self._last_send_time = current_time
 
@@ -54,7 +80,6 @@ class DeviceManager:
             tag.send_distances(anchors)
 
     def _dispatch_incoming(self, msg):
-        # Allow broadcast to all devices, for example for sync messages
         if msg.target == "all":
             for device in self.devices.values():
                 device.on_message(msg)

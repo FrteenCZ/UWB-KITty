@@ -1,34 +1,34 @@
-import bpy  # type: ignore
+import bpy # type: ignore
 import serial.tools.list_ports
 from ..operators.serial_modal import SERIAL_OT_StartESP
+from ..operators.tick_modal import _timer_handle
 
-# Panel for toggling object tracking in the 3D View
-class VIEW3D_PT_tracking_panel(bpy.types.Panel):
-    bl_label = "Object Tracker"
+class UWB_UL_device_list(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        if self.layout_type in {'DEFAULT', 'COMPACT'}:
+            layout.label(text=item.id, icon='DECORATE_LINKED')
+            layout.label(text=item.blender_object_name, icon='OBJECT_DATA')
+            layout.label(text=item.role, icon='USER')
+        elif self.layout_type in {'GRID'}:
+            layout.alignment = 'CENTER'
+            layout.label(text="", icon_value=icon)
+
+class VIEW3D_PT_device_manager_panel(bpy.types.Panel):
+    bl_label = "Device Manager"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = 'UWB-KITty'
 
     def draw(self, context):
-        obj = context.active_object
-        if obj is not None:
-            self.layout.label(text=f"Tracking: '{obj.name}'")
-        else:
-            self.layout.label(text="No object selected")
-
-        self.layout.operator(
-            "view3d.toggle_object_tracking", text="Toggle Tracking")
-
-
-# This panel is for displaying distance measurements in the 3D view.
-class VIEW3D_PT_distance_panel(bpy.types.Panel):
-    bl_label = "Distance Display"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = 'UWB-KITty'
-
-    def draw(self, context):
-        self.layout.operator("view3d.toggle_distance_draw")
+        layout = self.layout
+        scene = context.scene
+        
+        row = layout.row()
+        row.template_list("UWB_UL_device_list", "", scene.uwb_kitty_props, "devices", scene.uwb_kitty_props, "active_device_index")
+        
+        col = row.column(align=True)
+        col.operator("wm.add_device", icon='ADD', text="")
+        col.operator("wm.remove_device", icon='REMOVE', text="").index = scene.uwb_kitty_props.active_device_index
 
 
 def get_serial_devices(self, context):
@@ -43,7 +43,7 @@ class SerialProperties(bpy.types.PropertyGroup):
         name="Serial Port",
         description="Select ESP device to connect",
         items=get_serial_devices
-    )  # type: ignore
+    )
 
 
 class VIEW3D_PT_comunication_panel(bpy.types.Panel):
@@ -60,37 +60,23 @@ class VIEW3D_PT_comunication_panel(bpy.types.Panel):
         layout.prop(props, "port")
         if SERIAL_OT_StartESP.running:
             layout.operator("wm.serial_stop_esp", text="Stop", icon="CANCEL")
+            if _timer_handle is None:
+                layout.operator("wm.tick_start", text="Start Simulation")
+            else:
+                layout.operator("wm.tick_stop", text="Stop Simulation")
         else:
             layout.operator("wm.serial_start_esp", text="Connect", icon="PLAY")
 
-
-# Add device 
-class VIEW3D_PT_add_device_panel(bpy.types.Panel):
-    bl_label = "Add Device"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = 'UWB-KITty'
-
-    def draw(self, context):
-        layout = self.layout
-        layout.operator("wm.add_device", text="Add Device")
-
-
 def register():
-    bpy.utils.register_class(VIEW3D_PT_tracking_panel)
-    bpy.utils.register_class(VIEW3D_PT_distance_panel)
+    bpy.utils.register_class(UWB_UL_device_list)
+    bpy.utils.register_class(VIEW3D_PT_device_manager_panel)
+    bpy.utils.register_class(SerialProperties) # Register SerialProperties
+    bpy.types.Scene.serial_props = bpy.props.PointerProperty(type=SerialProperties) # Attach to Scene
     bpy.utils.register_class(VIEW3D_PT_comunication_panel)
-    bpy.utils.register_class(SerialProperties)
-    bpy.types.Scene.serial_props = bpy.props.PointerProperty(
-        type=SerialProperties)
-    bpy.utils.register_class(VIEW3D_PT_add_device_panel)
-
-
 
 def unregister():
-    bpy.utils.unregister_class(VIEW3D_PT_tracking_panel)
-    bpy.utils.unregister_class(VIEW3D_PT_distance_panel)
     bpy.utils.unregister_class(VIEW3D_PT_comunication_panel)
-    bpy.utils.unregister_class(SerialProperties)
-    del bpy.types.Scene.serial_props
-    bpy.utils.unregister_class(VIEW3D_PT_add_device_panel)
+    bpy.utils.unregister_class(VIEW3D_PT_device_manager_panel)
+    bpy.utils.unregister_class(UWB_UL_device_list)
+    del bpy.types.Scene.serial_props # Unregister from Scene
+    bpy.utils.unregister_class(SerialProperties) # Unregister SerialProperties

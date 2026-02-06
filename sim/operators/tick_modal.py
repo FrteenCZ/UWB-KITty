@@ -1,5 +1,6 @@
-import bpy  # type: ignore
+import bpy # type: ignore
 from ..globals import device_manager
+from .serial_modal import SERIAL_OT_StartESP
 
 
 _timer_handle = None
@@ -12,9 +13,9 @@ def tick_update():
 
 
 class WM_OT_tick_start(bpy.types.Operator):
-    """Start the tick update loop"""
+    """Start the tick update loop and load devices"""
     bl_idname = "wm.tick_start"
-    bl_label = "Start Tick"
+    bl_label = "Start Simulation"
 
     def execute(self, context):
         global _timer_handle
@@ -22,6 +23,10 @@ class WM_OT_tick_start(bpy.types.Operator):
         if _timer_handle is not None:
             self.report({'WARNING'}, "Tick loop already running")
             return {'CANCELLED'}
+        
+        # Load devices from persistent properties
+        serial_port = SERIAL_OT_StartESP._thread
+        device_manager.load_devices_from_properties(context, serial_port)
         
         _timer_handle = bpy.app.timers.register(tick_update)
         self.report({'INFO'}, "Tick loop started")
@@ -31,7 +36,7 @@ class WM_OT_tick_start(bpy.types.Operator):
 class WM_OT_tick_stop(bpy.types.Operator):
     """Stop the tick update loop"""
     bl_idname = "wm.tick_stop"
-    bl_label = "Stop Tick"
+    bl_label = "Stop Simulation"
 
     def execute(self, context):
         global _timer_handle
@@ -42,6 +47,10 @@ class WM_OT_tick_stop(bpy.types.Operator):
         
         bpy.app.timers.unregister(_timer_handle)
         _timer_handle = None
+        
+        # Clear the devices from the manager
+        device_manager.clear_devices()
+        
         self.report({'INFO'}, "Tick loop stopped")
         return {'FINISHED'}
 
