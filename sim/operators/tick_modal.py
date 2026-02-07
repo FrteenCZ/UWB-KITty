@@ -19,15 +19,15 @@ class WM_OT_tick_start(bpy.types.Operator):
 
     def execute(self, context):
         global _timer_handle
-        
-        if _timer_handle is not None:
+
+        if bpy.app.timers.is_registered(tick_update):
             self.report({'WARNING'}, "Tick loop already running")
             return {'CANCELLED'}
-        
+
         # Load devices from persistent properties
         serial_port = SERIAL_OT_StartESP._thread
         device_manager.load_devices_from_properties(context, serial_port)
-        
+
         _timer_handle = bpy.app.timers.register(tick_update)
         self.report({'INFO'}, "Tick loop started")
         return {'FINISHED'}
@@ -40,17 +40,17 @@ class WM_OT_tick_stop(bpy.types.Operator):
 
     def execute(self, context):
         global _timer_handle
-        
-        if _timer_handle is None:
+
+        if not bpy.app.timers.is_registered(tick_update):
             self.report({'WARNING'}, "Tick loop not running")
             return {'CANCELLED'}
-        
-        bpy.app.timers.unregister(_timer_handle)
+
+        bpy.app.timers.unregister(tick_update)
         _timer_handle = None
-        
+
         # Clear the devices from the manager
         device_manager.clear_devices()
-        
+
         self.report({'INFO'}, "Tick loop stopped")
         return {'FINISHED'}
 
@@ -62,10 +62,10 @@ def register():
 
 def unregister():
     global _timer_handle
-    
-    if _timer_handle is not None:
-        bpy.app.timers.unregister(_timer_handle)
+
+    if bpy.app.timers.is_registered(tick_update):
+        bpy.app.timers.unregister(tick_update)
         _timer_handle = None
-    
+
     bpy.utils.unregister_class(WM_OT_tick_start)
     bpy.utils.unregister_class(WM_OT_tick_stop)

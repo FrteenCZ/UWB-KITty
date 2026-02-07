@@ -1,7 +1,7 @@
 import bpy
 import time
 from .device import Device
-from ..comunication_protocol.protocol import Protocol
+from ..communication_protocol.protocol import Protocol
 from ..utils.ESPcom import SerialThread
 
 

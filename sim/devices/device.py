@@ -1,4 +1,4 @@
-from ..comunication_protocol.protocol import Message
+from ..communication_protocol.protocol import Message
 import time
 from ..scene.visualizer import Visualizer
 
