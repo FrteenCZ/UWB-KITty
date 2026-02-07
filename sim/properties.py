@@ -1,4 +1,4 @@
-import bpy  # type: ignore
+import bpy
 
 _is_updating_from_list = False
 

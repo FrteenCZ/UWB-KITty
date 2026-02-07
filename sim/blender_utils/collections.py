@@ -1,4 +1,4 @@
-import bpy  # type: ignore
+import bpy
 
 
 def cleanup_collection(coll, keep_names=None):

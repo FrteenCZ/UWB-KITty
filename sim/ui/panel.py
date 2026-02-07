@@ -1,5 +1,5 @@
-import bpy # type: ignore
-import serial.tools.list_ports
+import bpy
+import serial.tools.list_ports # type: ignore
 from ..operators.serial_modal import SERIAL_OT_StartESP
 from ..operators.tick_modal import _timer_handle
 
@@ -75,7 +75,7 @@ class SerialProperties(bpy.types.PropertyGroup):
         name="Serial Port",
         description="Select ESP device to connect",
         items=get_serial_devices
-    )
+    ) # type: ignore
 
 
 class VIEW3D_PT_comunication_panel(bpy.types.Panel):

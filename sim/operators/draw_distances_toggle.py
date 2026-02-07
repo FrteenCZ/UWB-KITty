@@ -1,4 +1,4 @@
-import bpy # type: ignore
+import bpy
 from ..draw.distances import draw_distances
 
 

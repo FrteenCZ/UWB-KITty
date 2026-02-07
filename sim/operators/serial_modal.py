@@ -1,4 +1,4 @@
-import bpy # type: ignore
+import bpy
 from ..utils.ESPcom import SerialThread
 
 

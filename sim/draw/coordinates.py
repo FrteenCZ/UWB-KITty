@@ -1,5 +1,5 @@
-import bpy # type: ignore
-import blf # type: ignore
+import bpy
+import blf
 
 
 def draw_coordinates(self, context):

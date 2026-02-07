@@ -1,4 +1,4 @@
-import bpy # type: ignore
+import bpy
 from ..globals import device_manager
 from . import tick_modal
 

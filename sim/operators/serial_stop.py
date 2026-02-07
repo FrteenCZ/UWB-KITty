@@ -1,4 +1,4 @@
-import bpy  # type: ignore
+import bpy
 from .serial_modal import SERIAL_OT_StartESP
 
 

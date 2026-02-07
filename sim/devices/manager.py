@@ -1,4 +1,4 @@
-import bpy # type: ignore
+import bpy
 import time
 from .device import Device
 from ..comunication_protocol.protocol import Protocol

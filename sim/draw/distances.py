@@ -1,6 +1,6 @@
-import bpy # type: ignore
-import blf # type: ignore
-from bpy_extras.view3d_utils import location_3d_to_region_2d # type: ignore
+import bpy
+import blf
+from bpy_extras.view3d_utils import location_3d_to_region_2d
 
 
 def draw_distances(self, context):

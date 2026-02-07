@@ -1,4 +1,4 @@
-import bpy  # type: ignore
+import bpy
 
 
 def ensure_arrow(name, start=(0, 0, 0), end=(0, 0, 0), relative=False, coll=None):

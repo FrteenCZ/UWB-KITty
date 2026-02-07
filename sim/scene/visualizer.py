@@ -1,4 +1,4 @@
-import bpy  # type: ignore
+import bpy
 import numpy as np
 from ..blender_utils.objects import ensure_arrow, ensure_empty
 from ..blender_utils.collections import cleanup_collection
