@@ -5,6 +5,7 @@
 #include "UWB_tracking_logic/trilateration.h"
 #include <WebServer.h>
 #include "utils/StatusLED.h"
+#include "utils/Button.h"
 
 // Define the global server instance
 WebServer server(80);
@@ -17,17 +18,17 @@ WebServer server(80);
 
 String onboardledState = "OFF";
 
-
 void setup()
 {
     Serial.begin(115200);
-
-
-
-    pinMode(BUTTON_PIN, INPUT_PULLUP);
-
-
     
+    StatusLED_setup();
+    UWB_setup();
+    Button_setup();
+    Serial.println("Setup complete.");
+
+
+    // StatusLED_setColor(50, 0, 50);
 }
 
 void loop()
@@ -35,12 +36,9 @@ void loop()
     // Handle serial input
     serialTask();
 
-  // if (digitalRead(BUTTON_PIN) == LOW) {
-  //   // Button pressed
-  //   StatusLED_setColor(0, 255, 0); // Green
-  // } else {
-  //   // Button released
-  //   StatusLED_setColor(0, 0, 0); // Off
-  // }
-    
+    // Update button state
+    Button_update();
+
+    // UWB processing
+    UWB_loop();
 }

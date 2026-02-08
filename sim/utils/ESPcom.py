@@ -1,74 +1,65 @@
-import threading
+import cmd
+from typing import Callable
+from threading import Thread, Event
 import time
-import json
 import sys
 
+# Append venv from source directory, because of pyserial
 sys.path.append(
     '/home/frtanta/Dokumenty/UWB-KITty/sim/.venv/lib/python3.13/site-packages')
 
-
 try:
-    import serial
+    from serial import Serial
 except ImportError:
     print("Could not import pyserial!")
 
 
-class SerialThread(threading.Thread):
-    def __init__(self, port='/dev/ttyUSB0', baudrate=115200):
-        super().__init__()
-        self.ser = serial.Serial(port, baudrate, timeout=1)
-        self.keep_running = True
+class SerialThread(Thread):
+    def __init__(
+        self,
+        port: str = "/dev/ttyUSB0",
+        baudrate: int = 115200,
+        print_all: bool = True,
+    ):
+        super().__init__(daemon=True)
+        self.ser = Serial(port, baudrate, timeout=1)
+        self.stop_event = Event()
         self.latest_line = ""
+        self.print_all = print_all
 
-        self.null_space = None
-        self.alpha = None
-        self.trilateration_cords = None
-        self.kalman_cords = None
+        self._rx_queue = []
 
     def run(self):
-        while self.keep_running:
-            if self.ser.in_waiting:
-                line = self.ser.readline().decode().strip()
-                print(f"[ESP] {line}")
-                self.latest_line = line
-                self.process_latest_line()
-            else:
-                time.sleep(0.1)
+        try:
+            while not self.stop_event.is_set():
+                line = self.ser.readline()
+                if not line:
+                    continue
+
+                self._rx_queue.append(line)
+
+        finally:
+            self.ser.close()
 
     def stop(self):
-        self.keep_running = False
-        self.ser.close()
+        self.stop_event.set()
 
-    def send_command(self, command, silent=False):
-        if self.ser.is_open:
-            if not silent:
-                print(f"Sending command: {command}")
-            self.ser.write(f"{command}\n".encode())
-        else:
-            print("Serial port is not open.")
+    def send_command(self, cmd: str | list[str], silent: bool = True):
+        if not self.ser.is_open:
+            raise RuntimeError("Serial port is not open")
 
-    def send_trilateration(self, points):
-        if points:
-            data = json.dumps(points)
-            self.send_command(f"points {data}", silent=True)
-            print(f"Sent points: {len(points)} targets")
+        if isinstance(cmd, list):
+            cmd = " ".join(cmd)
 
-    def process_latest_line(self):
-        if self.latest_line.startswith("data:"):
-            try:
-                data = self.latest_line.split("data:")[1].strip()
-                data = json.loads(data)
-                self.null_space = data.get("null_space", None)
-                self.alpha = data.get("alpha", None)
-                self.trilateration_cords = data.get("trilateration", None)
-                self.kalman_cords = data.get("kalman", None)
+        if not silent:
+            print(f"Sending command: {cmd}")
 
-                # print(f"Parsed data: {data}")
-            except json.JSONDecodeError as e:
-                print(f"Error decoding JSON data: {e}")
+        for i in range(0, len(cmd), 64):
+            self.ser.write(cmd[i:i+64])
+            time.sleep(0.001) # brief pause to allow buffer to clear
+        self.ser.flush()
 
-        elif self.latest_line.startswith("Error:"):
-            print(f"Received error from ESP: {self.latest_line}")
-
-        else:
-            print(f"Unrecognized line format: {self.latest_line}")
+    def read_messages(self):
+        msgs = self._rx_queue
+        self._rx_queue = []
+        return msgs

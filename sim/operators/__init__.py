@@ -1,9 +1,11 @@
-from . import draw_toggle, draw_distances_toggle, comunication
+from . import draw_toggle, draw_distances_toggle, serial_modal, manager_modal, tick_modal
 
 modules = [
     draw_toggle,
     draw_distances_toggle,
-    comunication,
+    serial_modal,
+    manager_modal,
+    tick_modal,
 ]
 
 
