@@ -1,4 +1,5 @@
 #include "serial_control.h"
+#include "../VirtualMachnies/VirtualMachnies.h"
 
 trilateration trilat;
 
@@ -17,6 +18,8 @@ void cmd_status_LED(const String &args);
 void cmd_points(const String &args);
 void cmd_wifi(const String &args);
 void cmd_uwb(const String &args);
+void cmd_config_anchor(const String &args);
+void cmd_sim_update(const String &args);
 
 Command commands[] = {
     {"help", cmd_help, "List all commands"},
@@ -25,6 +28,8 @@ Command commands[] = {
     {"points", cmd_points, "points <json> → process trilateration points"},
     {"wifi", cmd_wifi, "wifi <auto|AP|connect to SSID PASSWORD|scan|location> → WiFi control"},
     {"UWB", cmd_uwb, "UWB <start|stop|status|switch> → UWB control"},
+    {"config_anchor", cmd_config_anchor, "config_anchor <json> -> register anchor position"},
+    {"sim_update", cmd_sim_update, "sim_update <json> -> update virtual tag"},
 };
 const size_t COMMAND_COUNT = sizeof(commands) / sizeof(commands[0]);
 
@@ -55,6 +60,7 @@ void serialTask()
     {
         char c = Serial.read();
         buffer += c;
+        Serial.print(c); // Echo back the received character
 
         if (c == '\n')
         {
@@ -277,4 +283,65 @@ void cmd_uwb(const String &args)
         return;
     }
     Serial.println("{\"status\":\"ok\"}");
+}
+
+// VM: Register Anchor
+// Input: {"id": 1, "x": 1.0, "y": 2.0, "z": 0.0}
+void cmd_config_anchor(const String &args) {
+    JsonDocument doc;
+    DeserializationError err = deserializeJson(doc, args);
+    if (err) {
+        Serial.println("{\"error\":\"invalid_json\"}");
+        return;
+    }
+
+    uint16_t id = doc["id"];
+    float x = doc["x"];
+    float y = doc["y"];
+    float z = doc["z"];
+
+    VirtualMachine* vm = VMManager::getInstance().addVM(id, VM_ANCHOR);
+    vm->setPosition(x, y, z);
+    Serial.println("{\"status\":\"anchor_registered\"}");
+}
+
+// VM: Update Simulation
+// Input: {"tag_id": 100, "measurements": [{"id": 1, "d": 5.0}, ...]};
+void cmd_sim_update(const String &args) {
+    JsonDocument doc;
+    DeserializationError err = deserializeJson(doc, args);
+    if (err) {
+        Serial.println("{\"error\":\"invalid_json\"}");
+        return;
+    }
+
+    uint16_t tag_id = doc["tag_id"];
+    JsonArray measurementsJson = doc["measurements"];
+    
+    std::vector<Measurement> measurements;
+    for (JsonObject m : measurementsJson) {
+        Measurement sm;
+        sm.anchor_id = m["id"];
+        sm.distance = m["d"];
+        measurements.push_back(sm);
+    }
+
+    VirtualMachine* tag = VMManager::getInstance().processMeasurements(tag_id, measurements);
+    
+    if (tag) {
+        trilateration t = tag->getTrilateration();
+        
+        // Output format matching the 'points' command style but with sender info
+        Serial.printf(
+            "data: "
+            "{\"sender\": \"%d\", "
+            "\"trilateration\": %s, "
+            "\"kalman\": %s}\n",
+            tag_id,
+            t.trilatSolution.toString().c_str(),
+            t.getState().transpose().toString().c_str()
+        );
+    } else {
+        Serial.println("{\"error\":\"sim_update_failed\"}");
+    }
 }
