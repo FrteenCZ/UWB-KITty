@@ -7,7 +7,7 @@ from ..operators import tick_modal
 class UWB_UL_device_list(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
-            layout.label(text=item.id, icon='DECORATE_LINKED')
+            layout.label(text=f"{item.id}", icon='DECORATE_LINKED')
             layout.label(text=item.blender_object_name, icon='OBJECT_DATA')
             layout.label(text=item.role, icon='USER')
         elif self.layout_type in {'GRID'}:

@@ -3,6 +3,11 @@ from bpy.app.handlers import persistent
 from . import operators, ui, properties
 from .utils import objectProperties
 
+#       |\      _,,,---,,_
+# ZZZzz /,`.-'`'    -.  ;-;;,_
+#      |,4-  ) )-,_. ,\ (  `'-'
+#     '---''(_/--'  `-'\_)
+
 bl_info = {
     "name": "UWB-KITty",
     "blender": (4, 0, 0),

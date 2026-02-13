@@ -63,30 +63,42 @@ class Device:
         if self.role == "TAG":
             self.visualizer.update()
 
-    def send_distances(self, targets=[]):
-        if not self.obj or not targets:
+    def get_anchor_config_message(self):
+        if self.role != "ANCHOR" or not self.obj:
+            return None
+
+        loc = self.obj.location
+        return Message(
+            type="config_anchor",
+            sender=self.id,
+            target="esp",
+            payload={
+                "id": self.id,
+                "x": loc.x,
+                "y": loc.y,
+                "z": loc.z
+            }
+        )
+
+    def send_measurements(self, anchors=[]):
+        if self.role != "TAG" or not self.obj or not anchors:
             return
 
-        points = []
-        for target in targets:
-            if target == self.obj:
-                continue
-
-            points.append({
-                "name": target.name,
-                "location": {
-                    "x": target.location.x,
-                    "y": target.location.y,
-                    "z": target.location.z,
-                },
-                "distance": (target.location - self.obj.location).length
+        measurements = []
+        for anchor in anchors:
+            measurements.append({
+                "id": anchor.id,
+                "d": (anchor.obj.location - self.obj.location).length
             })
 
-        if points:
+        if measurements:
             message = Message(
-                type="points",
+                type="sim_update",
                 sender=self.id,
                 target="esp",
-                payload={"distances": points}
+                payload={
+                    "tag_id": self.id,
+                    "measurements": measurements
+                }
             )
             self._outbox.append(message)

@@ -22,7 +22,7 @@ def update_active_object(self, context):
 
 class DeviceProperties(bpy.types.PropertyGroup):
     """Properties for a single UWB device (for persistence)"""
-    id: bpy.props.StringProperty(name="Device ID")  # type: ignore
+    id: bpy.props.IntProperty(name="Device ID")  # type: ignore
     blender_object_name: bpy.props.StringProperty(
         name="Blender Object Name")  # type: ignore
     role: bpy.props.EnumProperty(
@@ -37,7 +37,7 @@ class DeviceProperties(bpy.types.PropertyGroup):
 
 class AddDeviceDialogProperties(bpy.types.PropertyGroup):
     """Properties for the Add Device dialog"""
-    device_id: bpy.props.StringProperty(name="Device ID")  # type: ignore
+    id: bpy.props.IntProperty(name="Device ID")  # type: ignore
     blender_object: bpy.props.PointerProperty(
         name="Blender Object",
         type=bpy.types.Object

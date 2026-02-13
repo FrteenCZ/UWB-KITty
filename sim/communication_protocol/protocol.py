@@ -25,6 +25,7 @@ class Protocol:
     @staticmethod
     def decode(raw: bytes) -> Message:
         """Parse and execute a command"""
+        print(f"Raw message received: {raw}")
         # try:
         #     data = json.loads(raw)
         #     return Message(
@@ -45,7 +46,7 @@ class Protocol:
             parts = raw.decode("utf-8").strip().split(" ", 1)
             msg_type = parts[0]
             payload = json.loads(parts[1]) if len(parts) > 1 else {}
-            return Message(type=msg_type, payload=payload, sender="Cube", target="device")
+            return Message(type=msg_type, payload=payload, sender=0, target="device")
         
         except json.JSONDecodeError as e:
             print(f"Error decoding JSON payload: {e}")

@@ -7,8 +7,8 @@ from ..utils.ESPcom import SerialThread
 
 class DeviceManager:
     def __init__(self):
-        self.devices: dict[str, Device] = {}
-        self.serial_links: dict[str, SerialThread] = {}
+        self.devices: dict[int, Device] = {}
+        self.serial_links: dict[int, SerialThread] = {}
         self._last_send_time = 0.0
 
     def load_devices_from_properties(self, context, serial_port):
@@ -32,6 +32,7 @@ class DeviceManager:
             )
             self.add_device(device, serial_port)
         
+        self._send_anchor_configs()
         print(f"Loaded {len(self.devices)} devices from properties.")
 
     def add_device(self, device, port):
@@ -61,23 +62,28 @@ class DeviceManager:
         for device in self.devices.values():
             device.update_state()
 
-        # 4. Send distances periodically
+        # 4. Send measurements periodically
         current_time = time.time()
         if current_time - self._last_send_time >= 1/6:
-            self._send_distances()
+            self._send_measurements()
             self._last_send_time = current_time
 
-    def _send_distances(self):
-        anchors = [
-            dev.obj for dev in self.devices.values() if dev.role == "ANCHOR"
-        ]
+    def _send_anchor_configs(self):
+        anchors = [dev for dev in self.devices.values() if dev.role == "ANCHOR"]
+        for anchor in anchors:
+            msg = anchor.get_anchor_config_message()
+            if msg:
+                self._send_message(msg)
+
+    def _send_measurements(self):
+        anchors = [dev for dev in self.devices.values() if dev.role == "ANCHOR"]
         tags = [dev for dev in self.devices.values() if dev.role == "TAG"]
 
         if not anchors or not tags:
             return
 
         for tag in tags:
-            tag.send_distances(anchors)
+            tag.send_measurements(anchors)
 
     def _dispatch_incoming(self, msg):
         if msg.target == "all":
@@ -96,7 +102,7 @@ class DeviceManager:
         port = self.serial_links.get(msg.sender)
         if port:
             raw = Protocol.encode(msg)
-            port.send_command(raw, True)
+            port.send_command(raw, False)
 
     def handle_system_message(self, msg):
         print("System message:", msg.type)
