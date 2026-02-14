@@ -6,6 +6,7 @@ using CommandFn = void (*)(const String &args);
 struct Command
 {
     const char *name;
+    const char *alias;
     CommandFn fn;
     const char *help;
 };
@@ -19,13 +20,13 @@ void cmd_config_anchor(const String &args);
 void cmd_sim_update(const String &args);
 
 Command commands[] = {
-    {"help", cmd_help, "List all commands"},
-    {"ping", cmd_ping, "ping → check connection"},
-    {"LED", cmd_status_LED, "LED <red|green|blue|off> → control onboard LED"},
-    {"wifi", cmd_wifi, "wifi <auto|AP|connect to SSID PASSWORD|scan|location> → WiFi control"},
-    {"UWB", cmd_uwb, "UWB <start|stop|status|switch> → UWB control"},
-    {"config_anchor", cmd_config_anchor, "config_anchor <json> -> register anchor position"},
-    {"sim_update", cmd_sim_update, "sim_update <json> -> update virtual tag"},
+    {"help", "h", cmd_help, "List all commands"},
+    {"ping", "p", cmd_ping, "ping → check connection"},
+    {"LED", "l", cmd_status_LED, "LED <red|green|blue|off> → control onboard LED"},
+    {"wifi", "w", cmd_wifi, "wifi <auto|AP|connect to SSID PASSWORD|scan|location> → WiFi control"},
+    {"UWB", "u", cmd_uwb, "UWB <start|stop|status|switch> → UWB control"},
+    {"config_anchor", "ca", cmd_config_anchor, "config_anchor <json> -> register anchor position"},
+    {"sim_update", "su", cmd_sim_update, "sim_update <json> -> update virtual tag"},
 };
 const size_t COMMAND_COUNT = sizeof(commands) / sizeof(commands[0]);
 
@@ -37,7 +38,7 @@ void handleCommand(const String &line)
 
     for (size_t i = 0; i < COMMAND_COUNT; i++)
     {
-        if (cmd.equalsIgnoreCase(commands[i].name))
+        if (cmd.equalsIgnoreCase(commands[i].name) || cmd.equalsIgnoreCase(commands[i].alias))
         {
             commands[i].fn(args);
             return;
@@ -49,6 +50,8 @@ void handleCommand(const String &line)
 }
 
 String buffer;
+bool echo = true;
+bool waiting = true;
 
 void serialTask()
 {
@@ -56,10 +59,27 @@ void serialTask()
     {
         char c = Serial.read();
         buffer += c;
-        Serial.print(c); // Echo back the received character
+
+        if (waiting)
+        {
+            waiting = false;
+            if (c == '-')
+            {
+                echo = false;
+                buffer = "";
+            }
+        }
+
+        if (echo)
+        {
+            Serial.print(c); // Echo back the received character
+        }
 
         if (c == '\n')
         {
+            echo = true;
+            waiting = true;
+
             buffer.trim();
             handleCommand(buffer);
             buffer = "";
