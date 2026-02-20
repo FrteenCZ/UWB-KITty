@@ -11,6 +11,39 @@ struct Command
     const char *help;
 };
 
+// Helper functions for protocol responses
+void sendACK(const String &cmd, const String &msg = "")
+{
+    Serial.print("[ACK] ");
+    Serial.print(cmd);
+    if (msg.length() > 0)
+    {
+        Serial.print(" ");
+        Serial.print(msg);
+    }
+    Serial.println();
+}
+
+void sendERR(const String &msg)
+{
+    Serial.print("[ERR] ");
+    Serial.println(msg);
+}
+
+void sendMSG(const String &msg)
+{
+    Serial.print("[MSG] ");
+    Serial.println(msg);
+}
+
+void sendDAT(const String &type, const String &data)
+{
+    Serial.print("[DAT] ");
+    Serial.print(type);
+    Serial.print(" ");
+    Serial.println(data);
+}
+
 void cmd_help(const String &args);
 void cmd_ping(const String &args);
 void cmd_status_LED(const String &args);
@@ -21,10 +54,10 @@ void cmd_sim_update(const String &args);
 
 Command commands[] = {
     {"help", "h", cmd_help, "List all commands"},
-    {"ping", "p", cmd_ping, "ping → check connection"},
-    {"LED", "l", cmd_status_LED, "LED <red|green|blue|off> → control onboard LED"},
-    {"wifi", "w", cmd_wifi, "wifi <auto|AP|connect to SSID PASSWORD|scan|location> → WiFi control"},
-    {"UWB", "u", cmd_uwb, "UWB <start|stop|status|switch> → UWB control"},
+    {"ping", "p", cmd_ping, "ping -> check connection"},
+    {"LED", "l", cmd_status_LED, "LED <red|green|blue|off> -> control onboard LED"},
+    {"wifi", "w", cmd_wifi, "wifi <auto|AP|connect to SSID PASSWORD|scan|location> -> WiFi control"},
+    {"UWB", "u", cmd_uwb, "UWB <start|stop|status|switch> -> UWB control"},
     {"config_anchor", "ca", cmd_config_anchor, "config_anchor <json> -> register anchor position"},
     {"sim_update", "su", cmd_sim_update, "sim_update <json> -> update virtual tag"},
 };
@@ -45,8 +78,8 @@ void handleCommand(const String &line)
         }
     }
 
-    Serial.println("{\"error\":\"unknown_command\"}");
-    Serial.println("Type 'help' for a list of available commands.");
+    sendERR("Command not found: " + cmd);
+    sendMSG("Type 'help' for a list of available commands.");
 }
 
 String buffer;
@@ -81,7 +114,10 @@ void serialTask()
             waiting = true;
 
             buffer.trim();
-            handleCommand(buffer);
+            if (buffer.length() > 0)
+            {
+                handleCommand(buffer);
+            }
             buffer = "";
         }
     }
@@ -96,16 +132,15 @@ void cmd_help(const String &)
 {
     for (size_t i = 0; i < COMMAND_COUNT; i++)
     {
-        Serial.print(commands[i].name);
-        Serial.print(" - ");
-        Serial.println(commands[i].help);
+        String msg = String(commands[i].name) + " - " + String(commands[i].help);
+        sendMSG(msg);
     }
 }
 
 // Basic ping command to check connection
 void cmd_ping(const String &)
 {
-    Serial.println("pong");
+    sendACK("ping");
 }
 
 // Control the status LED
@@ -129,11 +164,11 @@ void cmd_status_LED(const String &args)
     }
     else
     {
-        Serial.println("{\"error\":\"invalid_mode\"}");
+        sendERR("invalid_mode");
         return;
     }
 
-    Serial.println("{\"status\":\"ok\"}");
+    sendACK("LED", args);
 }
 
 // WiFi command handler
@@ -141,31 +176,36 @@ void cmd_wifi(const String &args)
 {
     if (args == "auto")
     {
+        sendMSG("Connecting to saved WiFi...");
         connect_to_wifi();
     }
     else if (args == "AP")
     {
+        sendMSG("Starting Access Point...");
         start_AP("ESP32-AP", "12345678");
     }
-    else if (args.startsWith("connect to ")) // Example input: "connect to MySSID MyPassword"
-    {
+    else if (args.startsWith("connect to "))
+    { // Example input: "connect to MySSID MyPassword"
         String ssid = args.substring(11, args.indexOf(' ', 11));
         String password = args.substring(args.indexOf(' ', 11) + 1);
+        sendMSG("Connecting to " + ssid + "...");
         connect_to_wifi(1, 5, ssid.c_str(), password.c_str());
     }
     else if (args == "scan")
     {
+        sendMSG("Scanning WiFi...");
         scan_wifi();
     }
     else if (args == "location")
     {
+        sendMSG("Scanning for location...");
         scan_wifi();
 
         // Load stored locations
         File file = SPIFFS.open("/networks.json", "r");
         if (!file)
         {
-            Serial.println("Failed to open file for reading");
+            sendERR("Failed to open networks.json");
             return;
         }
 
@@ -178,8 +218,7 @@ void cmd_wifi(const String &args)
         DeserializationError error = deserializeJson(doc, content);
         if (error)
         {
-            Serial.print("Failed to parse JSON: ");
-            Serial.println(error.c_str());
+            sendERR("Failed to parse JSON: " + String(error.c_str()));
             return;
         }
 
@@ -188,15 +227,17 @@ void cmd_wifi(const String &args)
 
         // Find the matching location
         findMatchingLocation(root);
-        Serial.println(bestMatch.name);
-        Serial.printf("Location: %f, %f, %f\n", bestMatch.location[0], bestMatch.location[1], bestMatch.location[2]);
+        sendMSG("Best match: " + String(bestMatch.name));
+
+        String locData = String(bestMatch.location[0]) + "," + String(bestMatch.location[1]) + "," + String(bestMatch.location[2]);
+        sendDAT("LOC", locData);
     }
     else
     {
-        Serial.println("{\"error\":\"invalid_wifi_command\"}");
+        sendERR("invalid_wifi_command");
         return;
     }
-    Serial.println("{\"status\":\"ok\"}");
+    sendACK("wifi", args);
 }
 
 // UWB command handler
@@ -204,43 +245,48 @@ void cmd_uwb(const String &args)
 {
     if (args == "start")
     {
-        Serial.println("Starting UWB...");
+        sendMSG("Starting UWB...");
         UWB_start();
     }
     else if (args == "stop")
     {
-        Serial.println("Stopping UWB...");
+        sendMSG("Stopping UWB...");
         UWB_stop();
     }
     else if (args == "status")
     {
-        Serial.println("UWB status: ...");
+        String status = "UWB status: ";
         if (isRanging)
         {
-            Serial.println("Ranging is active");
-        }
-        if (isAnchor)
-        {
-            Serial.println("Device is in anchor mode");
+            status += "Ranging Active, ";
         }
         else
         {
-            Serial.println("Device is in tag mode");
+            status += "Ranging Inactive, ";
         }
-        Serial.print("Distance: ");
-        Serial.println(distance);
+
+        if (isAnchor)
+        {
+            status += "Mode: Anchor";
+        }
+        else
+        {
+            status += "Mode: Tag";
+        }
+        sendMSG(status);
+        sendDAT("DIST", String(distance));
     }
     else if (args == "switch")
     {
-        Serial.println("Switching UWB mode...");
+        sendMSG("Switching UWB mode...");
         UWB_switchMode();
     }
     else
     {
-        Serial.println("{\"error\":\"invalid_uwb_command\"}");
+        sendERR("invalid_uwb_command");
         return;
     }
-    Serial.println("{\"status\":\"ok\"}");
+    sendACK("UWB", args);
 }
 
 // VM: Register Anchor
@@ -251,7 +297,7 @@ void cmd_config_anchor(const String &args)
     DeserializationError err = deserializeJson(doc, args);
     if (err)
     {
-        Serial.println("{\"error\":\"invalid_json\"}");
+        sendERR("Failed to parse JSON: " + String(err.c_str()));
         return;
     }
 
@@ -262,18 +308,18 @@ void cmd_config_anchor(const String &args)
 
     VirtualMachine *vm = VMManager::getInstance().addVM(id, VM_ANCHOR);
     vm->setPosition(x, y, z);
-    Serial.println("{\"status\":\"anchor_registered\"}");
+    sendACK("config_anchor", "id=" + String(id));
 }
 
 // VM: Update Simulation
-// Input: {"tag_id": 100, "measurements": [{"id": 1, "d": 5.0}, ...]};
+// Input: {"tag_id": 100, "measurements": [{"id": 1, "d": 5.0}, ...]}
 void cmd_sim_update(const String &args)
 {
     JsonDocument doc;
     DeserializationError err = deserializeJson(doc, args);
     if (err)
     {
-        Serial.println("{\"error\":\"invalid_json\"}");
+        sendERR("Failed to parse JSON: " + String(err.c_str()));
         return;
     }
 
@@ -295,20 +341,15 @@ void cmd_sim_update(const String &args)
     {
         trilateration t = tag->getTrilateration();
 
-        // Output format matching the 'points' command style but with sender info
-        Serial.printf(
-            "data: "
-            "{\"null_space\": %s, "
-            "\"alpha\": %.6f, "
-            "\"trilateration\": %s, "
-            "\"kalman\": %s}\n",
-            t.null_space.transpose().toString().c_str(),
-            t.alpha,
-            t.trilatSolution.toString().c_str(),
-            t.getState().transpose().toString().c_str());
+        String trilatStr = "{\"null_space\": " + String(t.null_space.transpose().toString().c_str()) + ", ";
+        trilatStr += "\"alpha\": " + String(t.alpha) + ", ";
+        trilatStr += "\"trilateration\": " + String(t.trilatSolution.toString().c_str()) + ", ";
+        trilatStr += "\"kalman\": " + String(t.getState().transpose().toString().c_str()) + "}\n";
+
+        sendDAT("DATA", trilatStr);
     }
     else
     {
-        Serial.println("{\"error\":\"sim_update_failed\"}");
+        sendERR("Failed to process measurements for tag_id: " + String(tag_id));
     }
 }
