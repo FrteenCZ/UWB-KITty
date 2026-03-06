@@ -341,7 +341,8 @@ void cmd_sim_update(const String &args)
     {
         trilateration t = tag->getTrilateration();
 
-        String trilatStr = "{\"null_space\": " + String(t.null_space.transpose().toString().c_str()) + ", ";
+        String trilatStr = "{\"tag_id\": " + String(tag_id) + ", ";
+        trilatStr += "\"null_space\": " + String(t.null_space.transpose().toString().c_str()) + ", ";
         trilatStr += "\"alpha\": " + String(t.alpha) + ", ";
         trilatStr += "\"trilateration\": " + String(t.trilatSolution.toString().c_str()) + ", ";
         trilatStr += "\"kalman\": " + String(t.getState().transpose().toString().c_str()) + "}\n";
