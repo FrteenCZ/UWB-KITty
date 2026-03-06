@@ -51,6 +51,12 @@ class DeviceManager:
             for raw in serial.read_messages():
                 msg = Protocol.decode(raw)
                 if msg:
+                    # If sender is not in the message, infer it from the serial port
+                    if msg.sender is None:
+                        for dev_id, port in self.serial_links.items():
+                            if port == serial:
+                                msg.sender = dev_id
+                                break
                     self._dispatch_incoming(msg)
 
         # 2. Collect outgoing messages
@@ -102,7 +108,18 @@ class DeviceManager:
         port = self.serial_links.get(msg.sender)
         if port:
             raw = Protocol.encode(msg)
-            port.send_command(raw, False)
+            port.send_command(raw, True)
 
     def handle_system_message(self, msg):
-        print("System message:", msg.type)
+        if msg.type == "msg":
+            print(f"[\033[94mMSG\033[0m] ESP: {msg.payload}")
+        elif msg.type == "ack":
+            print(f"[\033[92mACK\033[0m] Command recognized: {msg.payload}")
+        elif msg.type == "err":
+            print(f"[\033[91mERR\033[0m] Module Error: {msg.payload}")
+        elif msg.type == "loc":
+            print(f"[\033[96mLOC\033[0m] Location update: x={msg.payload[0]}, y={msg.payload[1]}, z={msg.payload[2]}")
+        elif msg.type == "dist":
+            print(f"[\033[96mDIST\033[0m] Distance update: {msg.payload}m")
+        else:
+            print(f"[SYS] Unknown system message ({msg.type}): {msg.payload}")

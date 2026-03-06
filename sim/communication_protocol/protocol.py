@@ -25,32 +25,52 @@ class Protocol:
     @staticmethod
     def decode(raw: bytes) -> Message:
         """Parse and execute a command"""
-        print(f"Raw message received: {raw}")
-        # try:
-        #     data = json.loads(raw)
-        #     return Message(
-        #         type=data["type"],
-        #         sender=data.get("sender"),
-        #         target=data.get("target"),
-        #         payload=data.get("payload", {}),
-        #     )
-        # except json.JSONDecodeError as e:
-        #     print(f"Error decoding JSON: {e}")
-        #     return None
-        # except KeyError as e:
-        #     print(f"Missing key in message: {e}")
-        #     return None
-
-        # Placeholder until I implement the protocol on the ESP side
         try:
-            parts = raw.decode("utf-8").strip().split(" ", 1)
-            msg_type = parts[0]
-            payload = json.loads(parts[1]) if len(parts) > 1 else {}
-            return Message(type=msg_type, payload=payload, sender=0, target="device")
+            text = raw.decode("utf-8").strip()
+            if not text:
+                return None
+                
+            parts = text.split(" ", 2)
+            if not parts:
+                return None
+                
+            tag = parts[0]
+            
+            if tag == "[DAT]":
+                if len(parts) >= 3 and parts[1] == "DATA":
+                    payload_str = parts[2]
+                    try:
+                        data = json.loads(payload_str)
+                        # Sender will be inferred by DeviceManager if not present
+                        sender_id = data.get("tag_id")
+                        return Message(type="data:", payload=data, sender=sender_id, target="device")
+                    except json.JSONDecodeError as e:
+                        print(f"Error decoding JSON payload: {e}")
+                        return None
+                elif len(parts) >= 3 and parts[1] == "LOC":
+                    coords = [float(x) for x in parts[2].split(',')]
+                    return Message(type="loc", payload=coords, sender=None, target="system")
+                elif len(parts) >= 3 and parts[1] == "DIST":
+                    dist = float(parts[2])
+                    return Message(type="dist", payload=dist, sender=None, target="system")
+                else:
+                    return Message(type="system", payload=text)
+                    
+            elif tag == "[MSG]":
+                return Message(type="msg", payload=parts[1] + (" " + parts[2] if len(parts) > 2 else ""))
+            elif tag == "[ACK]":
+                return Message(type="ack", payload=parts[1] + (" " + parts[2] if len(parts) > 2 else ""))
+            elif tag == "[ERR]":
+                return Message(type="err", payload=parts[1] + (" " + parts[2] if len(parts) > 2 else ""))
+                
+            else:
+                # Fallback to older format or generic commands
+                msg_type = parts[0]
+                payload = parts[1] if len(parts) > 1 else ""
+                if len(parts) > 2:
+                    payload = parts[1] + " " + parts[2]
+                return Message(type=msg_type, payload=payload, sender=None, target="device")
         
-        except json.JSONDecodeError as e:
-            print(f"Error decoding JSON payload: {e}")
-            return None
         except Exception as e:
             print(f"Error decoding message: {e}")
             return None

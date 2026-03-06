@@ -29,8 +29,13 @@ class Device:
             if message.type == "data:":
                 self.null_space = message.payload.get("null_space")
                 self.alpha = message.payload.get("alpha")
-                self.trilateration = message.payload.get("trilateration")[0]
-                self.kalman = message.payload.get("kalman")[0]
+                
+                trilat = message.payload.get("trilateration")
+                self.trilateration = trilat[0] if trilat and isinstance(trilat, list) and isinstance(trilat[0], list) else trilat
+                
+                kalman = message.payload.get("kalman")
+                self.kalman = kalman[0] if kalman and isinstance(kalman, list) and isinstance(kalman[0], list) else kalman
+                
                 self.last_data_update = time.time()
 
             elif message.type == "PING":
