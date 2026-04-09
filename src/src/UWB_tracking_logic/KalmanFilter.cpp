@@ -74,7 +74,7 @@ void KalmanFilter::predict(unsigned long current_time)
     P = F * P * F.transpose() + Q;
 }
 
-void KalmanFilter::update(Matrix measurement, const Matrix &null_space, float alpha, unsigned long current_time)
+void KalmanFilter::update(Matrix measurement)
 {
     // If not initialized, use this measurement to initialize the state.
     if (!is_initialized_)
@@ -83,28 +83,9 @@ void KalmanFilter::update(Matrix measurement, const Matrix &null_space, float al
         return;
     }
 
-    // predict the current state
-    predict(current_time);
 
-    // deal with the null space
-    if (null_space.cols() != 0)
-    {
-        Matrix x = measurement; // vector from measurement to predicted state
-        for (int i = 0; i < measurement.rows(); i++)
-        {
-            x[i][0] -= getState()[i][0];
-        }
-        Matrix w = null_space * null_space.transpose() * x; // x vector projected on the null space
-        float w_lenght = w.norm();
-        if (w_lenght != 0.0f)
-        {
-            measurement = measurement - w * (alpha / w_lenght);
-        }
-        else
-        {
-            measurement = measurement + null_space.getColumn(0) * alpha;
-        }
-    }
+
+
 
     Matrix Y = measurement - (H * X);             // Measurement residual
     Matrix S = H * P * H.transpose() + R;         // Residual covariance

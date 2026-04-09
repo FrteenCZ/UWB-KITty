@@ -1,4 +1,5 @@
 #include "trilateration.h"
+#include "UWB_tracking_logic/matrix.h"
 
 /**
  * @brief Initialize the trilateration algorithm.
@@ -82,14 +83,11 @@ void trilateration::update(const Matrix &cords, const Matrix &distances, unsigne
 
     if (cords.rows() == 1)
     {
-        null_space = Matrix(numOfDimensions, numOfDimensions);
-        for (int i = 0; i < numOfDimensions; i++)
-        {
-            null_space[i][i] = 1;
-        }
         trilatSolution = cords;
-        alpha = distances[0][0];
-        kf.update(trilatSolution.transpose(), null_space, alpha, current_time);
+        trilatSolution[0][0] += distances[0][0];
+
+        kf.predict(current_time);
+        kf.update(trilatSolution.transpose());
         return;
     }
 
@@ -241,10 +239,117 @@ void trilateration::update(const Matrix &cords, const Matrix &distances, unsigne
         }
     }
 
-    // --- 8. Update Kalman Filter State ---
+    // --- 8. Resolve ambiguity ---
+    kf.predict(current_time); // predict the current state of kalman
+    Matrix measurement = trilatSolution.transpose();
+    if (numOfDimensions != dimensionsToKeep) { // if ambiguity exists
+        Matrix starting_position = Matrix({{0, 0, 0}});
+        bool has_starting_position = false;
+
+        // 1. Define the target state (KF, Starting Point, or Origin)
+        Matrix target = kf.is_initialized_ ? kf.getState() : starting_position;
+        bool use_projection = kf.is_initialized_ || has_starting_position;
+
+        if (use_projection) {
+            Matrix x = measurement;
+            for (int i = 0; i < measurement.rows(); i++) {
+                x[i][0] -= target[i][0];
+            }
+
+            // Project delta onto the null space
+            Matrix w = null_space * null_space.transpose() * x;
+            float w_length = w.norm();
+
+            if (w_length > 1e-6f) {
+                // Point = Center + (Projected Vector scaled to Alpha)
+                measurement = measurement - w * (alpha / w_length);
+            } else {
+                // If target is exactly at center, pick any valid direction
+                measurement = measurement + null_space.getColumn(0) * alpha;
+            }
+        } else {
+            // 2. Setup Mode (The N_zero Method)
+            // We want to kill the axes we aren't currently defining.
+            // If defining X-axis, kill Y and Z. If defining Y, kill Z.
+
+            int numNullVectors = null_space.cols();
+            int rowsToConstrain = numNullVectors - 1;
+
+            if (rowsToConstrain > 0) {
+                Matrix N_zero(rowsToConstrain, numNullVectors);
+
+                // Construct N_zero by picking the rows of N we want to set to 0
+                // e.g., if we want to define the i-th axis, we pick all other rows
+                int currentRow = 0;
+                int axisToDefine = (numOfDimensions - numNullVectors); // Logic for X -> Y -> Z
+
+                for (int i = 0; i < numOfDimensions; i++) {
+                    if (i == axisToDefine) continue; // Skip the axis we are currently defining
+                    if (currentRow >= rowsToConstrain) break;
+
+                    for (int j = 0; j < numNullVectors; j++) {
+                        N_zero[currentRow][j] = null_space[i][j];
+                    }
+                    currentRow++;
+                }
+
+                // Find the "Freedom Vector" (Null space of N_zero)
+                std::tie(eigenvalues, eigenvectors) = (N_zero.transpose() * N_zero).eigenJacobi();
+                // Setup mode
+                        //  else {
+                        //     Matrix N_zero = Matrix(numOfDimensions - dimensionsToKeep - 1, numOfDimensions - dimensionsToKeep);
+                        //     for (int i = 0; i < numOfDimensions - dimensionsToKeep - 1; i++) {
+                        //         for (int j = 0; j < numOfDimensions - dimensionsToKeep; i++) {
+                        //             N_zero[i][j] = null_space[i+1][j];
+                        //         }
+                        //     }
+                
+                        //     std::tie(eigenvalues, eigenvectors) = (N_zero.transpose() * N_zero).eigenJacobi();
+                        //     Matrix null_vector = Matrix(eigenvectors.getColumn(numOfDimensions - dimensionsToKeep - 1));
+                
+                        //     measurement = null_space * null_vector;
+                        // }
+                // Jacobi usually sorts, but ensure you grab the one with the smallest eigenvalue
+                Matrix null_vector = eigenvectors.getColumn(numNullVectors - 1);
+
+                // 3. Selection Logic: Choose + or - to satisfy the "Positive Direction" guideline
+                Matrix pos_candidate = null_space * (null_vector * alpha);
+
+                // If the coordinate of the axis we are defining is negative, flip it
+                if (pos_candidate[axisToDefine][0] < 0) {
+                    pos_candidate = pos_candidate * -1.0f;
+                }
+
+                measurement = measurement + pos_candidate; // Center + Offset
+            } else {
+                // Special case: Only 1 null vector (1D ambiguity / Point Pair)
+                // Just pick the one with the positive coordinate in the highest dimension
+                Matrix offset = null_space.getColumn(0) * alpha;
+                if (offset[numOfDimensions - 1][0] < 0) offset = offset * -1.0f;
+
+                measurement = measurement + offset;
+            }
+        }
+        // // Setup mode
+        //  else {
+        //     Matrix N_zero = Matrix(numOfDimensions - dimensionsToKeep - 1, numOfDimensions - dimensionsToKeep);
+        //     for (int i = 0; i < numOfDimensions - dimensionsToKeep - 1; i++) {
+        //         for (int j = 0; j < numOfDimensions - dimensionsToKeep; i++) {
+        //             N_zero[i][j] = null_space[i+1][j];
+        //         }
+        //     }
+
+        //     std::tie(eigenvalues, eigenvectors) = (N_zero.transpose() * N_zero).eigenJacobi();
+        //     Matrix null_vector = Matrix(eigenvectors.getColumn(numOfDimensions - dimensionsToKeep - 1));
+
+        //     measurement = null_space * null_vector;
+        // }
+    }
+
+    // --- 9. Update Kalman Filter State ---
     // Serial.print("Trilateration Solution JSON:");
     // trilatSolution.print();
-    kf.update(trilatSolution.transpose(), null_space, alpha, current_time);
+    kf.update(measurement);
     // Serial.print("Kalman Filter State JSON:");
     // getState().transpose().print();
 }
